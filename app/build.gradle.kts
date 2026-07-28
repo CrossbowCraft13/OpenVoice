@@ -131,7 +131,7 @@ dependencies {
     // Security - Encryption
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.security:security-app-authenticator:1.0.0-beta01")
-    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    implementation("androidx.biometric:biometric:1.4.0-alpha07")
 
     // WorkManager - Background Tasks
     implementation("androidx.work:work-runtime-ktx:2.9.0")
