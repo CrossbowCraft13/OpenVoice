@@ -1,0 +1,28 @@
+# Default owners
+* @yourusername
+
+# Core AI and pipeline
+/app/src/main/java/com/example/openvoice/ai/ @yourusername
+/app/src/main/java/com/example/openvoice/pipeline/ @yourusername
+/app/src/main/java/com/example/openvoice/planner/ @yourusername
+
+# Memory system
+/app/src/main/java/com/example/openvoice/memory/ @yourusername
+
+# Perception and vision
+/app/src/main/java/com/example/openvoice/perception/ @yourusername
+
+# Accessibility
+/app/src/main/java/com/example/openvoice/accessibility/ @yourusername
+
+# Native code
+/app/src/main/cpp/ @yourusername
+
+# Build configuration
+/*.gradle.kts @yourusername
+/app/*.gradle.kts @yourusername
+/CMakeLists.txt @yourusername
+
+# Documentation
+/docs/ @yourusername
+/README.md @yourusername

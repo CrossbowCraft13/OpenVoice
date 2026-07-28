@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenVoice</string>
+    <string name="accessibility_description">OpenVoice uses this service to read your screen and perform actions. All processing is local.</string>
+</resources>
