@@ -12,6 +12,7 @@ app/src/
 
 | Test File | Type | Tests | Coverage |
 |-----------|------|-------|----------|
+| `PluginRegistryTest.kt` | JVM unit | 4 | Plugin registration, lifecycle, dispatch, failure isolation |
 | `VoicePipelineTest.kt` | Instrumentation | 12 | Voice pipeline, operators |
 | `AccessibilityAutomationTest.kt` | Instrumentation | 30+ | UI search, action commands |
 | `AccessibilityIntelligenceTest.kt` | Instrumentation | 40+ | Search engine, blackboard, workflows |
@@ -85,3 +86,4 @@ fun benchmark_routerSpeed() {
 | `planner/` | 85%+ |
 | `perception/` | 80%+ |
 | `system/` | 80%+ |
+| `plugin/` | 95%+ |

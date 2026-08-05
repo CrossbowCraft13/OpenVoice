@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <cstring>
+#include <string>
 #include <android/log.h>
 
 #define LOG_TAG "WhisperJNI"

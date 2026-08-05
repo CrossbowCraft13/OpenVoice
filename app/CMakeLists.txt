@@ -15,8 +15,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 add_library(whisper_bridge SHARED
     src/main/cpp/whisper_jni.cpp
 )
-find_package(JNI REQUIRED)
-target_include_directories(whisper_bridge PRIVATE ${JNI_INCLUDE_DIRS} src/main/cpp)
+target_include_directories(whisper_bridge PRIVATE src/main/cpp)
 target_link_libraries(whisper_bridge android log)
 set_target_properties(whisper_bridge PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
@@ -28,12 +27,12 @@ set_target_properties(whisper_bridge PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 add_library(llama_bridge SHARED
     src/main/cpp/llama_jni.cpp
 )
-target_include_directories(llama_bridge PRIVATE ${JNI_INCLUDE_DIRS} src/main/cpp)
+target_include_directories(llama_bridge PRIVATE src/main/cpp)
 target_link_libraries(llama_bridge android log)
 set_target_properties(llama_bridge PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 # ============================================================
 # Common compile options for ARM64
 # ============================================================
-target_compile_options(whisper_bridge PRIVATE -O3 -march=armv8.2-a+dotprod+fp16 -DNDEBUG)
-target_compile_options(llama_bridge PRIVATE -O3 -march=armv8.2-a+dotprod+fp16 -DNDEBUG)
+target_compile_options(whisper_bridge PRIVATE -O3 -DNDEBUG)
+target_compile_options(llama_bridge PRIVATE -O3 -DNDEBUG)

@@ -33,7 +33,7 @@
 | Screen understanding | ✅ | ❌ | ❌ | ❌ |
 | Memory + knowledge graph | ✅ | ❌ | ❌ | ❌ |
 | Autonomous planning | ✅ | ❌ | ❌ | ❌ |
-| Plugin SDK (future) | ✅ | ❌ | ❌ | ❌ |
+| Plugin SDK | ✅ | ❌ | ❌ | ❌ |
 | Encrypted storage | ✅ | ❌ | ❌ | ❌ |
 | User controls data | ✅ | ❌ | ❌ | ❌ |
 | Works on any Android | ✅ | ✅ | ❌ | ✅ |
@@ -57,7 +57,7 @@ Audio → VAD → WakeWord → STT → Intent → Planner
                                             ├── OCR
                                             ├── Local LLM
                                             ├── Vision
-                                            └── Plugins (future)
+                                            └── Plugins (in-process SDK)
 
 Always uses the CHEAPEST capable subsystem first.
 ```
@@ -174,6 +174,7 @@ Models are automatically recommended based on your device's RAM.
 - [Developer Guide](docs/developer/getting-started.md)
 - [Build Guide](docs/developer/build-guide.md)
 - [Model Guide](docs/developer/model-guide.md)
+- [Plugin Development](docs/developer/plugin-development.md)
 - [FAQ](docs/user/faq.md)
 
 ## 🤝 Contributing
@@ -186,8 +187,8 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📋 Roadmap
 
-- **v1.0.0-beta** — Current release (Phases 1-8 complete)
-- **v1.1.0** — Plugin SDK, custom wake words
+- **v1.0.0-beta** — Current release (Phases 1-9 core complete)
+- **v1.1.0** — Plugin marketplace, custom wake words
 - **v2.0.0** — Multi-device sync, voice cloning
 
 See [ROADMAP.md](ROADMAP.md) for details.

@@ -3,6 +3,7 @@
 ## [1.0.0-beta] — 2026-07-29
 
 ### Added
+- In-process Plugin SDK: manifest contract, lifecycle registry, safe dispatch, and example plugin
 - Voice pipeline: VAD, wake word (OpenWakeWord), STT (Whisper.cpp), TTS (Piper)
 - Local AI Runtime: llama.cpp integration, InferenceEngine, ModelManager, DeviceProfiler
 - Accessibility Intelligence: semantic UI tree, search engine, action engine, screen state, workflows
@@ -23,7 +24,6 @@
 - All processing is local. Zero cloud dependencies.
 
 ### Known Limitations
-- Plugin SDK not yet implemented
 - ONNX/LLM models must be downloaded separately
 - Whisper.cpp native library requires NDK compilation
 - Vision models require separate multimodal GGUF download

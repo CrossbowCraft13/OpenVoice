@@ -19,10 +19,10 @@ The current release focuses on core stability, privacy, and foundation features.
 
 | Feature | Status |
 |---------|--------|
-| Plugin interface design | 📝 Planned |
-| Plugin lifecycle | 📝 Planned |
+| Plugin interface design | ✅ Implemented |
+| Plugin lifecycle | ✅ Implemented |
 | Plugin marketplace | 🔮 Future |
-| Example plugins | 📝 Planned |
+| Example plugins | ✅ Implemented |
 
 ### 🔜 Cloud-Optional Features (Phase 10+)
 
@@ -48,6 +48,7 @@ The immediate goal is a stable, documented, well-tested beta release.
 ### Release Checklist
 
 - [x] All 8 phases implemented
+- [x] Phase 9 core plugin SDK implemented
 - [ ] Complete documentation
 - [ ] CI/CD pipeline
 - [ ] 80%+ test coverage

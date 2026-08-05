@@ -184,7 +184,7 @@ class PerceptionEngine @Inject constructor(
 
         val totalMs = System.currentTimeMillis() - overallStart
         val primarySource = when {
-            VisionAccessibilityService.isRunning() -> PerceptionSource.ACCESSIBILITY
+            VoiceAccessibilityService.isRunning() -> PerceptionSource.ACCESSIBILITY
             visionResult != null -> PerceptionSource.VISION
             ocrResult != null -> PerceptionSource.OCR
             else -> PerceptionSource.ACCESSIBILITY
