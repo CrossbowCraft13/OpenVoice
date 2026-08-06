@@ -3,14 +3,14 @@
 ## Community Support
 
 - **📖 Documentation**: See the [docs folder](docs/SUMMARY.md) for comprehensive documentation
-- **🐛 Bug Reports**: [GitHub Issues](https://github.com/yourusername/openvoice/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/yourusername/openvoice/discussions)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/CrossbowCraft13/openvoice/issues)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/CrossbowCraft13/openvoice/discussions)
 - **❓ FAQ**: See the [FAQ](docs/user/faq.md)
 
 ## Before Opening an Issue
 
 1. Check the [FAQ](docs/user/faq.md) for common questions
-2. Search [existing issues](https://github.com/yourusername/openvoice/issues) for similar problems
+2. Search [existing issues](https://github.com/CrossbowCraft13/openvoice/issues) for similar problems
 3. Ensure you're running the latest version
 4. Check that your device meets the minimum requirements
 

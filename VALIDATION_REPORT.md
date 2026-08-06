@@ -29,7 +29,7 @@ Audio → VAD → WakeWord → STT (Whisper.cpp) → Intent → CapabilityRouter
 
 | Component | File | Lines | Technology |
 |-----------|------|-------|------------|
-| Build | `build.gradle.kts` | — | Gradle 8.4, AGP 8.2, Kotlin 1.9 |
+| Build | `build.gradle.kts` | — | Gradle 8.6, AGP 8.4, Kotlin 1.9 |
 | AndroidManifest | `AndroidManifest.xml` | — | Permissions, services, receivers |
 | Theme | `ui/Color.kt` | 12 | Material 3, neon orange accent |
 | DI | `di/AppModule.kt` | 54 | Hilt, all providers |
@@ -116,18 +116,18 @@ LLM            0.63        4         Complex understanding
 
 ## Known Prerequisites
 
-- Requires Android SDK 35 + NDK 25+
+- Requires Android SDK 35 + NDK 25.2.9519653
 - ONNX Runtime Android (`ai.onnxruntime:onnxruntime-android`)
-- llama.cpp as Git submodule (for native LLM inference)
+- llama.cpp native bridge is currently a compile-time stub; production inference requires the upstream library integration
 - ML Kit text-recognition (`com.google.mlkit:text-recognition`)
-- whisper.cpp as Git submodule (for STT)
+- whisper.cpp native bridge is currently a compile-time stub; production STT requires the upstream library integration
 - Piper ONNX models (for TTS)
 
 ## Build Instructions
 
 ```bash
-# Generate Gradle wrapper (one-time)
-gradle wrapper --gradle-version 8.4
+# The Gradle 8.6 wrapper is checked in; no one-time generation is required.
+./gradlew --version
 
 # Build
 ./gradlew assembleDebug

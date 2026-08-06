@@ -1,5 +1,6 @@
 package com.example.openvoice.plugin
 
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -14,8 +15,16 @@ class PluginRegistry @Inject constructor() {
 
     private data class Entry(
         val plugin: OpenVoicePlugin,
-        var state: PluginState = PluginState.REGISTERED
+        val manifest: PluginManifest,
+        var state: PluginState = PluginState.REGISTERED,
+        var lifecycleInProgress: Boolean = false,
+        var dispatchInProgress: Int = 0
     )
+
+    private sealed interface LifecycleStart {
+        data class Run(val entry: Entry, val previousState: PluginState) : LifecycleStart
+        data class Complete(val result: PluginLifecycleResult) : LifecycleStart
+    }
 
     private val entries = linkedMapOf<String, Entry>()
 
@@ -31,67 +40,132 @@ class PluginRegistry @Inject constructor() {
         if (entries.containsKey(manifest.id)) {
             return PluginRegistrationResult.Rejected("Plugin already registered: ${manifest.id}")
         }
-        entries[manifest.id] = Entry(plugin)
+        // Keep the validated manifest stable even if a plugin exposes mutable metadata.
+        entries[manifest.id] = Entry(
+            plugin = plugin,
+            manifest = manifest.copy(permissions = manifest.permissions.toSet())
+        )
         return PluginRegistrationResult.Registered
     }
 
     @Synchronized
     fun unregister(pluginId: String): Boolean {
         val entry = entries[pluginId] ?: return false
-        // An enabled plugin must be disabled first so its cleanup callback always runs.
-        if (entry.state == PluginState.ENABLED) return false
+        // Only known-inactive states are removable. A failed callback may have partially
+        // initialized resources, so require a successful disable before removal.
+        if ((entry.state != PluginState.REGISTERED && entry.state != PluginState.DISABLED) ||
+            entry.lifecycleInProgress ||
+            entry.dispatchInProgress > 0
+        ) {
+            return false
+        }
         entries.remove(pluginId)
         return true
     }
 
     @Synchronized
-    fun manifests(): List<PluginManifest> = entries.values.map { it.plugin.manifest }
+    fun manifests(): List<PluginManifest> = entries.values.map { it.manifest }
 
     @Synchronized
     fun state(pluginId: String): PluginState? = entries[pluginId]?.state
 
-    suspend fun enable(pluginId: String, context: PluginContext = PluginContext()): PluginLifecycleResult {
-        val entry = synchronized(this) { entries[pluginId] }
-            ?: return PluginLifecycleResult.Failed("Unknown plugin: $pluginId")
-        return try {
-            entry.plugin.onEnable(context)
-            synchronized(this) { entry.state = PluginState.ENABLED }
-            PluginLifecycleResult.Succeeded
-        } catch (error: Exception) {
-            synchronized(this) { entry.state = PluginState.FAILED }
-            PluginLifecycleResult.Failed(error.message ?: "Plugin enable failed")
+    suspend fun enable(
+        pluginId: String,
+        context: PluginContext = PluginContext()
+    ): PluginLifecycleResult {
+        return when (val start = beginLifecycle(pluginId, enabling = true)) {
+            is LifecycleStart.Complete -> start.result
+            is LifecycleStart.Run -> completeLifecycle(start, PluginState.ENABLED) {
+                start.entry.plugin.onEnable(context)
+            }
         }
     }
 
     suspend fun disable(pluginId: String): PluginLifecycleResult {
-        val entry = synchronized(this) { entries[pluginId] }
-            ?: return PluginLifecycleResult.Failed("Unknown plugin: $pluginId")
-        return try {
-            entry.plugin.onDisable()
-            synchronized(this) { entry.state = PluginState.DISABLED }
-            PluginLifecycleResult.Succeeded
-        } catch (error: Exception) {
-            synchronized(this) { entry.state = PluginState.FAILED }
-            PluginLifecycleResult.Failed(error.message ?: "Plugin disable failed")
+        return when (val start = beginLifecycle(pluginId, enabling = false)) {
+            is LifecycleStart.Complete -> start.result
+            is LifecycleStart.Run -> completeLifecycle(start, PluginState.DISABLED) {
+                start.entry.plugin.onDisable()
+            }
         }
     }
 
     suspend fun dispatch(request: PluginRequest): List<PluginInvocation> {
-        val activePlugins = synchronized(this) {
-            entries.values.filter { it.state == PluginState.ENABLED }.map { it.plugin }
+        val activeEntries = synchronized(this) {
+            entries.values
+                .filter { it.state == PluginState.ENABLED && !it.lifecycleInProgress }
+                .onEach { it.dispatchInProgress++ }
+                .toList()
         }
-        return activePlugins.mapNotNull { plugin ->
-            try {
-                when (val response = plugin.handle(request)) {
-                    PluginResponse.NotHandled -> null
-                    else -> PluginInvocation(plugin.manifest.id, response)
+        return try {
+            activeEntries.mapNotNull { entry ->
+                try {
+                    when (val response = entry.plugin.handle(request)) {
+                        PluginResponse.NotHandled -> null
+                        else -> PluginInvocation(entry.manifest.id, response)
+                    }
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    PluginInvocation(
+                        entry.manifest.id,
+                        PluginResponse.Failed(error.message ?: "Plugin request failed")
+                    )
                 }
-            } catch (error: Exception) {
-                PluginInvocation(
-                    plugin.manifest.id,
-                    PluginResponse.Failed(error.message ?: "Plugin request failed")
-                )
             }
+        } finally {
+            synchronized(this) {
+                activeEntries.forEach { entry -> entry.dispatchInProgress-- }
+            }
+        }
+    }
+
+    private fun beginLifecycle(pluginId: String, enabling: Boolean): LifecycleStart = synchronized(this) {
+        val entry = entries[pluginId]
+            ?: return@synchronized LifecycleStart.Complete(
+                PluginLifecycleResult.Failed("Unknown plugin: $pluginId")
+            )
+        if (entry.lifecycleInProgress || entry.dispatchInProgress > 0) {
+            return@synchronized LifecycleStart.Complete(
+                PluginLifecycleResult.Failed("Plugin is busy: $pluginId")
+            )
+        }
+        val alreadyInTargetState = if (enabling) {
+            entry.state == PluginState.ENABLED
+        } else {
+            entry.state == PluginState.DISABLED
+        }
+        if (alreadyInTargetState) {
+            return@synchronized LifecycleStart.Complete(PluginLifecycleResult.Succeeded)
+        }
+        entry.lifecycleInProgress = true
+        LifecycleStart.Run(entry, entry.state)
+    }
+
+    private suspend fun completeLifecycle(
+        start: LifecycleStart.Run,
+        successState: PluginState,
+        callback: suspend () -> Unit
+    ): PluginLifecycleResult {
+        return try {
+            callback()
+            synchronized(this) {
+                start.entry.state = successState
+                start.entry.lifecycleInProgress = false
+            }
+            PluginLifecycleResult.Succeeded
+        } catch (error: CancellationException) {
+            synchronized(this) {
+                start.entry.state = start.previousState
+                start.entry.lifecycleInProgress = false
+            }
+            throw error
+        } catch (error: Exception) {
+            synchronized(this) {
+                start.entry.state = PluginState.FAILED
+                start.entry.lifecycleInProgress = false
+            }
+            PluginLifecycleResult.Failed(error.message ?: "Plugin lifecycle operation failed")
         }
     }
 

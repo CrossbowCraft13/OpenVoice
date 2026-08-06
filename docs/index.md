@@ -20,7 +20,7 @@ OpenVoice is a fully open-source Android voice assistant that runs entirely on-d
 
 ## Quick Start
 
-1. [Download the latest APK](https://github.com/yourusername/openvoice/releases)
+1. [Download the latest APK](https://github.com/CrossbowCraft13/openvoice/releases)
 2. Install on your Android device
 3. Say **"Hey OpenVoice, open Spotify"**
 
@@ -44,9 +44,9 @@ OpenVoice is a fully open-source Android voice assistant that runs entirely on-d
 
 ## Stay Updated
 
-- ⭐ Star on [GitHub](https://github.com/yourusername/openvoice)
-- 🐛 Report issues on [GitHub Issues](https://github.com/yourusername/openvoice/issues)
-- 💬 Join [Discussions](https://github.com/yourusername/openvoice/discussions)
+- ⭐ Star on [GitHub](https://github.com/CrossbowCraft13/openvoice)
+- 🐛 Report issues on [GitHub Issues](https://github.com/CrossbowCraft13/openvoice/issues)
+- 💬 Join [Discussions](https://github.com/CrossbowCraft13/openvoice/discussions)
 
 ---
 

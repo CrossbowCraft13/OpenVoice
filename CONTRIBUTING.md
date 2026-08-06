@@ -40,12 +40,15 @@ Documentation improvements are always welcome. You can edit documentation files 
 
 ### Setting Up the Development Environment
 
-1. Install Android Studio Hedgehog (2023.1.1) or later
-2. Install Android SDK 35
-3. Install NDK 25+
-4. Clone the repository
-5. Open the project in Android Studio
-6. Wait for Gradle sync to complete
+1. Install Android Studio Hedgehog (2023.1.1) or later.
+2. In SDK Manager install Android SDK Platform 35, Android SDK Build-Tools, NDK 25+, and CMake 3.22.1.
+3. Use Java 17. Android Studio includes a compatible JDK; command-line builds require `JAVA_HOME` to point to JDK 17.
+4. Clone the repository and open it in Android Studio.
+5. Run the read-only prerequisite check:
+   ```bash
+   ./scripts/check-environment.sh
+   ```
+6. Wait for Gradle sync to complete, then build with `./gradlew assembleDebug`.
 
 ### Building from Source
 
@@ -65,11 +68,6 @@ Documentation improvements are always welcome. You can edit documentation files 
 # Run lint
 ./gradlew lint
 
-# Run detekt
-./gradlew detekt
-
-# Run ktlint
-./gradlew ktlintCheck
 ```
 
 ### Project Structure
@@ -109,7 +107,8 @@ OpenVoice/
 ├── build.gradle.kts
 ├── settings.gradle.kts
 ├── gradle.properties
-└── gradle/wrapper/
+├── gradle/wrapper/                 # Gradle 8.6 wrapper metadata
+└── scripts/check-environment.sh    # Read-only prerequisite check
 ```
 
 ### Branch Organization
@@ -152,6 +151,8 @@ OpenVoice/
 
 ### Testing Standards
 
+Before submitting changes, run `./scripts/check-environment.sh` so missing Java, SDK, NDK, CMake, or Gradle prerequisites are reported clearly.
+
 - Unit tests for all business logic
 - Instrumentation tests for UI and integration
 - Performance benchmarks for critical paths
@@ -160,10 +161,10 @@ OpenVoice/
 
 ## Getting Help
 
-- Open a [Discussion](https://github.com/yourusername/openvoice/discussions)
+- Open a [Discussion](https://github.com/CrossbowCraft13/openvoice/discussions)
 - Join our community chat
 - Check the [Documentation](docs/)
-- Read the [FAQ](docs/FAQ.md)
+- Read the [FAQ](docs/user/faq.md)
 
 ## Recognition
 

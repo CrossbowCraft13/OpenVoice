@@ -8,13 +8,14 @@ plugins {
 android {
     namespace = "com.example.openvoice"
     compileSdk = 35
+    ndkVersion = "25.2.9519653"
 
     defaultConfig {
         applicationId = "com.example.openvoice"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0.0"
+        versionName = "1.0.0-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -145,7 +146,6 @@ dependencies {
     // TensorFlow Lite - Wake Word & NLU models
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
-    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0")
 
     // ONNX Runtime - Piper TTS & Silero VAD
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.16.3")
@@ -153,7 +153,7 @@ dependencies {
     // Audio processing utilities
 
     // Logging
-    implementation("com.squareup.timber:timber:5.0.1")
+    implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

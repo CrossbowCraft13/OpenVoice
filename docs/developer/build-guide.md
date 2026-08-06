@@ -4,20 +4,30 @@
 
 - **Android Studio**: Hedgehog (2023.1.1+) or later
 - **Android SDK**: Version 35
-- **NDK**: Version 25+ (for native whisper.cpp and llama.cpp)
+- **NDK**: Version 25.2.9519653 (for native whisper.cpp and llama.cpp)
 - **JDK**: Version 17
-- **Gradle**: 8.4 (wrapper included)
+- **Gradle**: 8.6 via the included Gradle Wrapper (no separate Gradle install required)
 
 ## Step-by-Step Build
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/openvoice.git
+git clone https://github.com/CrossbowCraft13/openvoice.git
 cd openvoice
 ```
 
-### 2. Set Up Android SDK
+### 2. Check the development environment
+
+Run the repository's read-only prerequisite check before building:
+
+```bash
+./scripts/check-environment.sh
+```
+
+It checks Java 17, Gradle 8.6, Android SDK 35, NDK 25.2.9519653, CMake, and `adb`. It does not install software or modify project files.
+
+### 3. Set Up Android SDK
 
 Ensure your `local.properties` points to the Android SDK:
 
@@ -27,7 +37,7 @@ echo "sdk.dir=/path/to/Android/Sdk" > local.properties
 
 Or open the project in Android Studio — it will create `local.properties` automatically.
 
-### 3. Build the App
+### 4. Build the App
 
 ```bash
 # Debug build (fast, no optimization)
@@ -40,7 +50,7 @@ Or open the project in Android Studio — it will create `local.properties` auto
 ./gradlew bundleRelease
 ```
 
-### 4. Run Tests
+### 5. Run Tests
 
 ```bash
 # Unit tests (fast, run on JVM)
@@ -50,10 +60,10 @@ Or open the project in Android Studio — it will create `local.properties` auto
 ./gradlew connectedDebugAndroidTest
 
 # All checks
-./gradlew lint detekt ktlintCheck
+./gradlew lint
 ```
 
-### 5. Install on Device
+### 6. Install on Device
 
 ```bash
 # Install debug APK
@@ -92,7 +102,7 @@ git submodule add https://github.com/ggerganov/whisper.cpp.git app/whisper.cpp
 
 ### NDK Not Found
 ```
-Install NDK 25+ via Android Studio SDK Manager.
+Install NDK 25.2.9519653 via Android Studio SDK Manager.
 Set ANDROID_NDK_HOME environment variable.
 ```
 

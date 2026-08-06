@@ -49,12 +49,12 @@ The immediate goal is a stable, documented, well-tested beta release.
 
 - [x] All 8 phases implemented
 - [x] Phase 9 core plugin SDK implemented
-- [ ] Complete documentation
-- [ ] CI/CD pipeline
+- [x] Complete documentation
+- [x] CI/CD pipeline
 - [ ] 80%+ test coverage
 - [ ] Security audit
 - [ ] Beta testing program
-- [ ] Public repository
+- [x] Public repository
 - [ ] GitHub Pages website
 - [ ] Signed APK distribution
 

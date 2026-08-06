@@ -5,11 +5,11 @@
 **A private, local-first AI assistant for Android**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-neonorange.svg)](LICENSE)
-[![Build](https://img.shields.io/github/actions/workflow/status/yourusername/openvoice/ci.yml?branch=main&label=build&color=FF6D00)](.github/workflows/ci.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/CrossbowCraft13/openvoice/ci.yml?branch=main&label=build&color=FF6D00)](.github/workflows/ci.yml)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-FF6D00?logo=kotlin)](https://kotlinlang.org)
 [![Android](https://img.shields.io/badge/Android-14-FF6D00?logo=android)](https://developer.android.com)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-FF6D00)](CONTRIBUTING.md)
-[![GitHub Stars](https://img.shields.io/github/stars/yourusername/openvoice?style=social)](https://github.com/yourusername/openvoice)
+[![GitHub Stars](https://img.shields.io/github/stars/CrossbowCraft13/openvoice?style=social)](https://github.com/CrossbowCraft13/openvoice)
 
 ---
 
@@ -87,7 +87,7 @@ Always uses the CHEAPEST capable subsystem first.
 ## 📱 Installation
 
 ### Pre-built APK
-1. Download the latest APK from [Releases](https://github.com/yourusername/openvoice/releases)
+1. Download the latest APK from [Releases](https://github.com/CrossbowCraft13/openvoice/releases)
 2. Enable "Install from unknown sources" in Android settings
 3. Install the APK
 4. Launch OpenVoice
@@ -101,13 +101,23 @@ Always uses the CHEAPEST capable subsystem first.
 
 ### Prerequisites
 - Android Studio Hedgehog (2023.1.1+) or later
-- Android SDK 35
-- NDK 25+
-- Gradle 8.4
+- Java 17
+- Android SDK Platform 35
+- Android NDK 25.2.9519653
+- CMake 3.22.1
+- Gradle Wrapper 8.6 (included; no separate Gradle install required)
+
+After cloning, run the read-only environment check:
+
+```bash
+./scripts/check-environment.sh
+```
+
+It reports missing tools and exact setup guidance before Gradle fails with a less actionable error.
 
 ### Build
 ```bash
-git clone https://github.com/yourusername/openvoice.git
+git clone https://github.com/CrossbowCraft13/openvoice.git
 cd openvoice
 ./gradlew assembleDebug
 ```
@@ -173,6 +183,7 @@ Models are automatically recommended based on your device's RAM.
 - [Memory & Knowledge](docs/architecture/memory.md)
 - [Developer Guide](docs/developer/getting-started.md)
 - [Build Guide](docs/developer/build-guide.md)
+- [Developer Setup](docs/developer/getting-started.md)
 - [Model Guide](docs/developer/model-guide.md)
 - [Plugin Development](docs/developer/plugin-development.md)
 - [FAQ](docs/user/faq.md)

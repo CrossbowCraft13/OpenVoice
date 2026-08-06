@@ -6,22 +6,26 @@ Welcome to OpenVoice development! This guide will help you understand the codeba
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/openvoice.git
+   git clone https://github.com/CrossbowCraft13/openvoice.git
    cd openvoice
    ```
 
-2. **Open in Android Studio**
-   - File → Open → Select the `openvoice` directory
-   - Wait for Gradle sync to complete
+2. **Check the command-line prerequisites**
+   ```bash
+   ./scripts/check-environment.sh
+   ```
+   The check is read-only and explains exactly which tool is missing.
 
-3. **Set up the Android SDK**
-   - Tools → SDK Manager → Install SDK 35 + NDK 25+
+3. **Open in Android Studio**
+   - File → Open → Select the `openvoice` directory
+   - Use SDK Manager to install Android SDK 35, NDK 25.2.9519653, and CMake 3.22.1
+   - Wait for Gradle sync to complete
 
 4. **Build and run**
    ```bash
    ./gradlew assembleDebug
    ```
-   Then install on your device or emulator.
+   Then install on your device or emulator. Command-line builds require Java 17 and Gradle 8.6; see the [Build Guide](build-guide.md) if the environment check fails.
 
 ## Project Map
 
@@ -93,7 +97,4 @@ Every major subsystem has a clean interface that can be swapped via DI:
 
 # Run instrumentation tests
 ./gradlew connectedDebugAndroidTest
-
-# Check test coverage
-./gradlew koverReport
 ```

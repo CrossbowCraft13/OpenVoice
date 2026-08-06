@@ -49,9 +49,9 @@ Plugin IDs must be lowercase and use only letters, numbers, dots, hyphens, and u
 3. The registry dispatches only to enabled plugins.
 4. `NotHandled` responses are omitted from the returned invocations, while handled and failed responses retain the plugin ID.
 5. Calling `disable(id)` prevents future dispatch and moves the plugin to `DISABLED`.
-6. Exceptions from lifecycle callbacks are contained and move the plugin to `FAILED`; exceptions during request handling become `PluginResponse.Failed` so one plugin cannot abort the dispatch cycle.
+6. Exceptions from lifecycle callbacks are contained and move the plugin to `FAILED`; cancellation is rethrown and restores the prior state. Exceptions during request handling become `PluginResponse.Failed` so one plugin cannot abort the dispatch cycle.
 
-The example `TimePlugin` responds to `ping` with `pong` and demonstrates the smallest useful implementation.
+Lifecycle operations for a plugin are serialized, and a plugin cannot be unregistered while it is enabled, transitioning, or handling a request. The example `TimePlugin` responds to `ping` with `pong` and demonstrates the smallest useful implementation.
 
 ## Permissions and safety
 
@@ -61,4 +61,4 @@ The registry is deliberately explicit and in-process. Marketplace discovery, pac
 
 ## Testing
 
-Plugin business logic belongs in JVM tests under `app/src/test`. At minimum, test registration validation, duplicate handling, lifecycle transitions, unknown commands, disabled behavior, and exception isolation. The reference tests are in `PluginRegistryTest.kt`.
+Plugin business logic belongs in JVM tests under `app/src/test`. At minimum, test registration validation, duplicate handling, lifecycle transitions, cancellation rollback, concurrent lifecycle calls, dispatch/unregister coordination, stable manifests, unknown commands, disabled behavior, and exception isolation. The reference tests are in `PluginRegistryTest.kt`.
