@@ -12,7 +12,6 @@ import com.example.openvoice.stt.WhisperSttEngine
 import com.example.openvoice.tts.PiperTtsEngine
 import com.example.openvoice.vad.VadManager
 import com.example.openvoice.wakeword.WakeWordDetector
-import com.example.openvoice.util.Logger
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,10 +20,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
-@InstallIn(SingletonComponent::class)
-object AppModule {
-
-    @Provides @Singleton fun provideLogger(): Logger { Logger.init(true); return Logger }
+@InstallIn(SingletonComponent::class)object AppModule {
 
     @Provides @Singleton
     fun provideAudioCapture(@ApplicationContext ctx: Context) = AudioCaptureManager(ctx)
