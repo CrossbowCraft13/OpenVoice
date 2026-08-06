@@ -13,7 +13,7 @@
 
 ---
 
-**All processing is local. No cloud. No telemetry. Your voice stays on your phone. As it should be.**
+**All processing is local. No cloud. No telemetry. Your voice stays on your phone, as it should be.**
 
 [Install](#installation) · [Build](#building-from-source) · [Docs](docs/SUMMARY.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md)
 
