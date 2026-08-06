@@ -13,7 +13,7 @@
 
 ---
 
-**All processing is local. No cloud. No telemetry. Your voice stays on your phone.**
+**All processing is local. No cloud. No telemetry. Your voice stays on your phone. As it should be.**
 
 [Install](#installation) · [Build](#building-from-source) · [Docs](docs/SUMMARY.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md)
 
@@ -45,7 +45,7 @@
 - **Zero network requests** — The app makes no hidden connections
 - **AES-256-GCM encryption** — All memories encrypted at rest via Android Keystore
 - **Full transparency** — Privacy dashboard shows every stored memory
-- **You control your data** — Browse, edit, export, or delete anything. (WE DONT WANT YOU DATA!!!)
+- **You control your data** — Browse, edit, export, or delete anything. (WE DONT WANT YOUR DATA!!!)
 
 ## 🏗 Architecture
 
