@@ -5,6 +5,7 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -69,7 +70,10 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: java-kotlin, cpp
+          # C++/NDK builds are not reliably traced by CodeQL's extractor, so
+          # analysis covers Java/Kotlin only. The native code is two small
+          # JNI bridge stubs (see app/CMakeLists.txt).
+          languages: java-kotlin
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -79,6 +83,14 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+
+      - name: Install NDK & CMake
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager --install "ndk;25.2.9519653" "cmake;3.22.1"
+
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       - name: Build
         run: ./gradlew assembleDebug
