@@ -60,4 +60,4 @@ The immediate goal is a stable, documented, well-tested beta release.
 
 ## Vision
 
-OpenVoice aims to be the default private AI assistant for Android — fully local, fully open source, and fully under the user's control. No cloud dependency. No telemetry. No privacy compromises.
+OpenVoice aims to be the default private AI assistant for Android — fully local, fully open source, and fully under the user's control. No cloud dependency. No telemetry. No privacy compromises. WE DONT WANT YOUR DATA!
