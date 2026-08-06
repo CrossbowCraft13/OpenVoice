@@ -24,7 +24,8 @@ object LlamaCppBridge {
 
     init {
         try {
-            System.loadLibrary("llama")
+            // The native library is built as "llama_bridge" by CMakeLists.txt.
+            System.loadLibrary("llama_bridge")
             nativeLoaded = true
             Logger.i("llama.cpp native library loaded", "AI")
         } catch (e: UnsatisfiedLinkError) {

@@ -112,79 +112,81 @@ class VoicePipeline @Inject constructor(
                 audioCapture.level.collect { level -> console.onAudioLevel(level) }
             }
 
-            vad.events.collect { event ->
-                when (event) {
-                    is VadEvent.SpeechStart -> {
-                        audioBuffer.clear()
-                        console.onSpeechDetected(0.0f)
-                        Logger.d("VAD: Speech started", "Pipeline")
-                    }
-                    is VadEvent.SpeechEnd -> {
-                        Logger.d("VAD: Speech ended (${event.durationMs}ms)", "Pipeline")
-                        console.onSilence()
-                        if (event.durationMs < 200) return@collect
-                        val concat = audioBuffer.flatten().toShortArray()
-                        if (concat.isNotEmpty()) {
-                            console.onSttStart()
-                            val text = stt.transcribe(concat)
-                            console.onSttComplete(text)
-                            if (text.isNotBlank()) {
-                                Logger.i("STT: $text", "Pipeline")
-                                _events.value = PipelineEvent.Transcribed(text)
+            vad.events.collect { events ->
+                for (event in events) {
+                    when (event) {
+                        is VadEvent.SpeechStart -> {
+                            audioBuffer.clear()
+                            console.onSpeechDetected(0.0f)
+                            Logger.d("VAD: Speech started", "Pipeline")
+                        }
+                        is VadEvent.SpeechEnd -> {
+                            Logger.d("VAD: Speech ended (${event.durationMs}ms)", "Pipeline")
+                            console.onSilence()
+                            if (event.durationMs < 200) continue
+                            val concat = audioBuffer.flatMap { it.toList() }.toShortArray()
+                            if (concat.isNotEmpty()) {
+                                console.onSttStart()
+                                val text = stt.transcribe(concat)
+                                console.onSttComplete(text)
+                                if (text.isNotBlank()) {
+                                    Logger.i("STT: $text", "Pipeline")
+                                    _events.value = PipelineEvent.Transcribed(text)
 
-                                val intentResult = intent.classify(text)
-                                console.onIntentClassified(intentResult)
-                                _events.value = PipelineEvent.IntentClassified(
-                                    intentResult.intent, intentResult.entities)
+                                    val intentResult = intent.classify(text)
+                                    console.onIntentClassified(intentResult)
+                                    _events.value = PipelineEvent.IntentClassified(
+                                        intentResult.intent, intentResult.entities)
 
-                                val resolution = router.resolve(intentResult)
-                                console.onCapabilitySelected(resolution)
+                                    val resolution = router.resolve(intentResult)
+                                    console.onCapabilitySelected(resolution)
 
-                                when (resolution) {
-                                    is Resolution.Native -> {
-                                        val opResult = ops.exec(
-                                            resolution.operatorId, context, resolution.params)
-                                        Logger.i("Op: ${resolution.operatorId} → ${opResult.message}", "Pipeline")
-                                        console.onActionExecuted(opResult.message)
-                                        _events.value = PipelineEvent.ActionExecuted(opResult.message)
-                                    }
-                                    is Resolution.Accessibility -> {
-                                        Logger.i("A11y: ${resolution.commands}", "Pipeline")
-                                        console.onActionExecuted("A11y: ${resolution.commands.firstOrNull()}")
-                                        _events.value = PipelineEvent.ActionExecuted(
-                                            "A11y: ${resolution.commands.firstOrNull()}")
-                                    }
-                                    is Resolution.LocalLm -> {
-                                        Logger.i("LLM: ${resolution.prompt}", "Pipeline")
-                                        _events.value = PipelineEvent.ActionExecuted(
-                                            "LLM processing: ${resolution.prompt}")
-                                    }
-                                    is Resolution.Vision -> {
-                                        Logger.i("Vision: ${resolution.prompt}", "Pipeline")
-                                        _events.value = PipelineEvent.ActionExecuted(
-                                            "Analyzing screen with vision...")
-                                        // Trigger perception in background
-                                        launch {
-                                            val (context, stats) = perception.perceive()
-                                            Logger.i("Perception: ${stats.sourceUsed} " +
-                                                "(${stats.totalLatencyMs}ms)", "Pipeline")
+                                    when (resolution) {
+                                        is Resolution.Native -> {
+                                            val opResult = ops.exec(
+                                                resolution.operatorId, context, resolution.params)
+                                            Logger.i("Op: ${resolution.operatorId} → ${opResult.message}", "Pipeline")
+                                            console.onActionExecuted(opResult.message)
+                                            _events.value = PipelineEvent.ActionExecuted(opResult.message)
+                                        }
+                                        is Resolution.Accessibility -> {
+                                            Logger.i("A11y: ${resolution.commands}", "Pipeline")
+                                            console.onActionExecuted("A11y: ${resolution.commands.firstOrNull()}")
                                             _events.value = PipelineEvent.ActionExecuted(
-                                                "Vision analysis: ${context.summary.take(100)}")
+                                                "A11y: ${resolution.commands.firstOrNull()}")
+                                        }
+                                        is Resolution.LocalLm -> {
+                                            Logger.i("LLM: ${resolution.prompt}", "Pipeline")
+                                            _events.value = PipelineEvent.ActionExecuted(
+                                                "LLM processing: ${resolution.prompt}")
+                                        }
+                                        is Resolution.Vision -> {
+                                            Logger.i("Vision: ${resolution.prompt}", "Pipeline")
+                                            _events.value = PipelineEvent.ActionExecuted(
+                                                "Analyzing screen with vision...")
+                                            // Trigger perception in background
+                                            launch {
+                                                val (screenCtx, stats) = perception.perceive()
+                                                Logger.i("Perception: ${stats.sourceUsed} " +
+                                                    "(${stats.totalLatencyMs}ms)", "Pipeline")
+                                                _events.value = PipelineEvent.ActionExecuted(
+                                                    "Vision analysis: ${screenCtx.summary.take(100)}")
+                                            }
+                                        }
+                                        is Resolution.Planner -> {
+                                            Logger.i("Planner: ${resolution.goal}", "Pipeline")
+                                            _events.value = PipelineEvent.ActionExecuted(
+                                                "Planning: ${resolution.goal}")
+                                        }
+                                        is Resolution.Unsupported -> {
+                                            Logger.w("Unsupported: ${resolution.reason}", "Pipeline")
+                                            console.onError(resolution.reason)
+                                            _events.value = PipelineEvent.ActionExecuted(
+                                                "I don't know how to do that yet.")
                                         }
                                     }
-                                    is Resolution.Planner -> {
-                                        Logger.i("Planner: ${resolution.goal}", "Pipeline")
-                                        _events.value = PipelineEvent.ActionExecuted(
-                                            "Planning: ${resolution.goal}")
-                                    }
-                                    is Resolution.Unsupported -> {
-                                        Logger.w("Unsupported: ${resolution.reason}", "Pipeline")
-                                        console.onError(resolution.reason)
-                                        _events.value = PipelineEvent.ActionExecuted(
-                                            "I don't know how to do that yet.")
-                                    }
+                                    audioBuffer.clear()
                                 }
-                                audioBuffer.clear()
                             }
                         }
                     }

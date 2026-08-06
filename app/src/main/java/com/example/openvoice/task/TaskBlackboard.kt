@@ -106,7 +106,7 @@ class TaskBlackboard @Inject constructor() {
 
     // ── Intent ──────────────────────────────────────────────────────
 
-    fun setIntent(intent: IntentResult, resolution: Resolution) {
+    fun setIntent(intent: IntentResult, resolution: Resolution? = null) {
         _state.value = _state.value.copy(
             intentResult = intent,
             resolution = resolution

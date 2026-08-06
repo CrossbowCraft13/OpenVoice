@@ -460,11 +460,16 @@ class SystemIntegrationTest {
                         com.example.openvoice.memory.KnowledgeGraph(
                             androidx.test.core.app.ApplicationProvider.getApplicationContext())),
                     com.example.openvoice.task.TaskBlackboard()
+                ),                    com.example.openvoice.ai.InferenceEngine(
+                        androidx.test.core.app.ApplicationProvider.getApplicationContext(),
+                        com.example.openvoice.ai.AiSettings(
+                            androidx.test.core.app.ApplicationProvider.getApplicationContext()),
+                        com.example.openvoice.ai.DeviceProfiler(
+                            androidx.test.core.app.ApplicationProvider.getApplicationContext())),
+                    com.example.openvoice.task.TaskBlackboard(),
+                    com.example.openvoice.planner.DynamicReplanner(
+                        com.example.openvoice.planner.CostModel())
                 ),
-                com.example.openvoice.task.TaskBlackboard(),
-                com.example.openvoice.planner.DynamicReplanner(
-                    com.example.openvoice.planner.CostModel())
-            ),
             com.example.openvoice.memory.MemoryEngine(
                 androidx.test.core.app.ApplicationProvider.getApplicationContext(),
                 com.example.openvoice.memory.VectorStore(
@@ -515,10 +520,15 @@ class SystemIntegrationTest {
                             androidx.test.core.app.ApplicationProvider.getApplicationContext()))),
                 com.example.openvoice.perception.VisualMemoryCache(),
                 com.example.openvoice.task.TaskBlackboard()
-            ),
-            com.example.openvoice.task.TaskBlackboard(),
-            explainMode,
-            com.example.openvoice.planner.LearningRecorder(
+            ),                com.example.openvoice.ai.InferenceEngine(
+                    androidx.test.core.app.ApplicationProvider.getApplicationContext(),
+                    com.example.openvoice.ai.AiSettings(
+                        androidx.test.core.app.ApplicationProvider.getApplicationContext()),
+                    com.example.openvoice.ai.DeviceProfiler(
+                        androidx.test.core.app.ApplicationProvider.getApplicationContext())),
+                com.example.openvoice.task.TaskBlackboard(),
+                explainMode,
+                com.example.openvoice.planner.LearningRecorder(
                 com.example.openvoice.memory.MemoryEngine(
                     androidx.test.core.app.ApplicationProvider.getApplicationContext(),
                     com.example.openvoice.memory.VectorStore(

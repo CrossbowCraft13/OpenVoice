@@ -291,7 +291,7 @@ class KnowledgeGraph @Inject constructor(
 
     // ── Query Helpers ──────────────────────────────────────────────
 
-    private fun query(sql: String, args: Array<String>): List<Relation> {
+    private fun query(sql: String, args: Array<String> = emptyArray()): List<Relation> {
         val results = mutableListOf<Relation>()
         try {
             val cursor = db?.rawQuery(sql, args) ?: return results

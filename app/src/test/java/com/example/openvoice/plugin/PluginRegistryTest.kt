@@ -118,7 +118,7 @@ class PluginRegistryTest {
     @Test
     fun unregisterWaitsForDispatchToFinish() = runTest {
         val registry = PluginRegistry()
-        val plugin = BlockingPlugin(PluginManifest("dispatch", "Dispatch", "1", ""))
+        val plugin = BlockingPlugin(PluginManifest("dispatch", "Dispatch", "1", ""), blockOnEnable = false)
         registry.register(plugin)
         registry.enable(plugin.manifest.id)
 
@@ -166,7 +166,8 @@ class PluginRegistryTest {
     }
 
     private class BlockingPlugin(
-        override val manifest: PluginManifest
+        override val manifest: PluginManifest,
+        private val blockOnEnable: Boolean = true
     ) : OpenVoicePlugin {
         var enableCancellationObserved = false
         val enableStarted = kotlinx.coroutines.CompletableDeferred<Unit>()
@@ -175,12 +176,14 @@ class PluginRegistryTest {
         private val dispatchRelease = kotlinx.coroutines.CompletableDeferred<Unit>()
 
         override suspend fun onEnable(context: PluginContext) {
-            enableStarted.complete(Unit)
-            try {
-                enableRelease.await()
-            } catch (error: CancellationException) {
-                enableCancellationObserved = true
-                throw error
+            if (blockOnEnable) {
+                enableStarted.complete(Unit)
+                try {
+                    enableRelease.await()
+                } catch (error: CancellationException) {
+                    enableCancellationObserved = true
+                    throw error
+                }
             }
         }
 

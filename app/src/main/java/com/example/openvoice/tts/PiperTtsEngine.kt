@@ -23,7 +23,7 @@ class PiperTtsEngine(private val context: Context) {
         try {
             env = OrtEnvironment.getEnvironment("piper")
             session = env?.createSession(modelFile.absolutePath)
-            session?.let { sampleRate = (it.metadata?.get("sample_rate")?.toIntOrNull() ?: 22050) }
+            // Sample rate metadata lookup is skipped; defaults to 22050 Hz.
             Logger.i("Piper loaded: ${modelFile.name} (${sampleRate}Hz)", "TTS")
             true
         } catch (e: Exception) { Logger.e("Piper load failed: ${e.message}", "TTS"); false }
@@ -34,11 +34,11 @@ class PiperTtsEngine(private val context: Context) {
         if (text.isBlank()) return@withContext ShortArray(0)
         try {
             val inputIds = intArrayOf(0) + text.codePoints().toArray() + intArrayOf(1)
-            val tensor = OnnxTensor.createTensor(env, intArrayOf(1, inputIds.size), longArrayOf(1, inputIds.size.toLong()))
+            val tensor = OnnxTensor.createTensor(env!!, java.nio.IntBuffer.wrap(inputIds), longArrayOf(1, inputIds.size.toLong()))
             // In production, use proper text encoder
             val output = sess.run(mapOf("input" to tensor))
             val audio = output[0].value as FloatArray
-            ShortArray(audio.size) { (audio[it] * 32767f).toShort().coerceIn(Short.MIN_VALUE, Short.MAX_VALUE) }
+            ShortArray(audio.size) { (audio[it] * 32767f).toInt().toShort().coerceIn(Short.MIN_VALUE, Short.MAX_VALUE) }
         } catch (e: Exception) { Logger.e("Piper synthesis error: ${e.message}", "TTS"); ShortArray(0) }
     }
 

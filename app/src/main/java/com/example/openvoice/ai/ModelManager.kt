@@ -210,6 +210,9 @@ class ModelManager @Inject constructor(
 
     fun getModelRequirements(paramsB: Float) = profiler.estimateModelRequirements(paramsB)
 
+    /** Expose the active AI settings (used by the Developer Console). */
+    fun getSettings(): AiSettings = settings
+
     // ── Metadata Extraction ─────────────────────────────────────────────
 
     private fun extractMetadata(file: File): Map<String, String> {

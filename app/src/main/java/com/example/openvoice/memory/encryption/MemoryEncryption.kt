@@ -15,7 +15,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.inject.Inject
-import javax.inject.Singulator
+import javax.inject.Singleton
 
 /**
  * MemoryEncryption — AES-256 encryption at rest for all memory data.

@@ -201,9 +201,7 @@ class DeveloperConsole @Inject constructor(
     // ── Benchmarking ────────────────────────────────────────────────────
 
     suspend fun runBenchmark(): List<BenchmarkResult> {
-        val runner = BenchmarkRunner(engine, profiler, modelManager.let {
-            com.example.openvoice.ai.AiSettings(context)
-        })
+        val runner = BenchmarkRunner(engine, profiler, modelManager.getSettings())
         val results = runner.runAll()
         benchmarkResults.addAll(results)
         logEvent("Benchmark: ${results.size} runs completed")

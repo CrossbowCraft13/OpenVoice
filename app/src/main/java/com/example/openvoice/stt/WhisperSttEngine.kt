@@ -9,7 +9,17 @@ import java.nio.ByteOrder
 class WhisperSttEngine(private val context: Context) {
 
     companion object {
-        init { System.loadLibrary("whisper_bridge") }
+        private var nativeLoaded = false
+
+        init {
+            try {
+                // The native library is built as "whisper_bridge" by CMakeLists.txt.
+                System.loadLibrary("whisper_bridge")
+                nativeLoaded = true
+            } catch (e: UnsatisfiedLinkError) {
+                Logger.w("whisper.cpp native library not available: ${e.message}", "STT")
+            }
+        }
     }
 
     private external fun nativeInit(path: String): Long
@@ -20,6 +30,10 @@ class WhisperSttEngine(private val context: Context) {
     private var ctxPtr = 0L
 
     fun initialize(modelFile: File): Boolean {
+        if (!nativeLoaded) {
+            Logger.e("Whisper native library not loaded", "STT")
+            return false
+        }
         if (!modelFile.exists()) { Logger.e("Whisper model not found: ${modelFile.absolutePath}", "STT"); return false }
         return try {
             ctxPtr = nativeInit(modelFile.absolutePath)

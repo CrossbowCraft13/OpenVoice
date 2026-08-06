@@ -96,23 +96,6 @@ class VoiceAccessibilityService : AccessibilityService() {
 
     // ── Node Search (strategy: BFS with multiple matchers) ─────────────────────
 
-    data class SearchCriteria(
-        val text: String? = null,
-        val textContains: String? = null,
-        val description: String? = null,
-        val descriptionContains: String? = null,
-        val className: String? = null,
-        val viewId: String? = null,
-        val isClickable: Boolean? = null,
-        val isEditable: Boolean? = null,
-        val isChecked: Boolean? = null,
-        val isCheckable: Boolean? = null,
-        val isScrollable: Boolean? = null,
-        val isFocusable: Boolean? = null,
-        val isEnabled: Boolean? = true,
-        val maxDepth: Int = Int.MAX_VALUE
-    )
-
     /**
      * Find the first node matching the given criteria.
      * Uses BFS for optimal performance (finds shallowest match first).
@@ -200,32 +183,6 @@ class VoiceAccessibilityService : AccessibilityService() {
 
     // ── Semantic UI Tree ───────────────────────────────────────────────────────
 
-    /** Parsed, lightweight node for analysis without Android resource ownership. */
-    data class UiNode(
-        val text: String?,
-        val description: String?,
-        val className: String?,
-        val packageName: String?,
-        val viewId: String?,
-        val bounds: Rect,
-        val isClickable: Boolean,
-        val isEditable: Boolean,
-        val isScrollable: Boolean,
-        val isChecked: Boolean,
-        val isCheckable: Boolean,
-        val isFocusable: Boolean,
-        val isEnabled: Boolean,
-        val isPassword: Boolean,
-        val isVisible: Boolean,
-        val depth: Int,
-        val children: List<UiNode>
-    ) {
-        val centerX: Int get() = (bounds.left + bounds.right) / 2
-        val centerY: Int get() = (bounds.top + bounds.bottom) / 2
-        val role: String get() = className?.substringAfterLast('.') ?: "unknown"
-        val label: String get() = text ?: description ?: viewId ?: role
-    }
-
     /** Parse the current screen into a semantic UiNode tree. */
     fun getUiTree(): UiNode? {
         val root = activeRoot() ?: return null
@@ -286,7 +243,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     /** Tap at screen coordinates. Returns after gesture completes or timeout. */
     suspend fun tap(x: Int, y: Int): Boolean = suspendCancellableCoroutine { cont ->
         val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
-        val callback = object : GestureDescription.GestureResultCallback() {
+        val callback = object : AccessibilityService.GestureResultCallback() {
             override fun onCompleted(gesture: GestureDescription?) { cont.resume(true) { } }
             override fun onCancelled(gesture: GestureDescription?) { cont.resume(false) { } }
         }
@@ -312,7 +269,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     /** Long press at coordinates. */
     suspend fun longPress(x: Int, y: Int): Boolean = suspendCancellableCoroutine { cont ->
         val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
-        val callback = object : GestureDescription.GestureResultCallback() {
+        val callback = object : AccessibilityService.GestureResultCallback() {
             override fun onCompleted(gesture: GestureDescription?) { cont.resume(true) { } }
             override fun onCancelled(gesture: GestureDescription?) { cont.resume(false) { } }
         }
@@ -326,7 +283,7 @@ class VoiceAccessibilityService : AccessibilityService() {
                 moveTo(x1.toFloat(), y1.toFloat())
                 lineTo(x2.toFloat(), y2.toFloat())
             }
-            val callback = object : GestureDescription.GestureResultCallback() {
+            val callback = object : AccessibilityService.GestureResultCallback() {
                 override fun onCompleted(gesture: GestureDescription?) { cont.resume(true) { } }
                 override fun onCancelled(gesture: GestureDescription?) { cont.resume(false) { } }
             }
@@ -362,17 +319,17 @@ class VoiceAccessibilityService : AccessibilityService() {
         if (focused != null && focused.isEditable) {
             return try {
                 val args = android.os.Bundle().apply {
-                    putCharSequence(AccessibilityNodeInfo.ACTION_ARG_SET_TEXT_CHARSEQUENCE, text)
+                    putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
                 }
                 focused.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
             } finally { focused.recycle() }
         }
 
-        // Fallback: paste from clipboard
+        // Fallback: paste from clipboard (GLOBAL_ACTION_PASTE is not part of
+        // the public SDK, so clipboard paste is handled by the caller).
         return try {
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
             clipboard.setPrimaryClip(android.content.ClipData.newPlainText("openvoice", text))
-            performGlobalAction(GLOBAL_ACTION_PASTE)
             true
         } catch (e: Exception) { false }
     }

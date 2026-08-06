@@ -28,8 +28,8 @@ class SileroVadEngine(context: Context) {
         return try {
             val floatData = FloatArray(audio.size) { audio[it].toFloat() / 32768f }
             val shape = longArrayOf(1, audio.size.toLong())
-            val tensor = OnnxTensor.createTensor(env, floatData, shape)
-            val inputs = mapOf("input" to tensor)
+            val tensor = OnnxTensor.createTensor(env!!, java.nio.FloatBuffer.wrap(floatData), shape)
+            val inputs: Map<String, OnnxTensor> = mapOf("input" to tensor)
             val output = sess.run(inputs)
             val result = output[0].value as FloatArray
             result[0].coerceIn(0f, 1f)

@@ -113,24 +113,20 @@ class ReliabilityManager @Inject constructor(
     // ── Private Handlers ────────────────────────────────────────────
 
     private fun handleCriticalError(error: SystemError) {
-        logger.error("CRITICAL: ${error.component}: ${error.message}")
+        Logger.e("CRITICAL: ${error.component}: ${error.message}", "Reliability")
         restartService()
     }
 
     private fun handleError(error: SystemError) {
-        logger.warn("Error: ${error.component}: ${error.message}")
+        Logger.w("Error: ${error.component}: ${error.message}", "Reliability")
         if (error.recoverable && error.recoveryAction.isNotEmpty()) {
-            logger.info("Recovery: ${error.recoveryAction}")
+            Logger.i("Recovery: ${error.recoveryAction}", "Reliability")
         }
     }
 
     private fun handleWarning(error: SystemError) {
-        logger.warn("Warning: ${error.component}: ${error.message}")
+        Logger.w("Warning: ${error.component}: ${error.message}", "Reliability")
     }
 
     fun clearErrors() { errors.clear() }
-
-    companion object {
-        private val logger = org.slf4j.LoggerFactory.getLogger(ReliabilityManager::class.java)
-    }
 }

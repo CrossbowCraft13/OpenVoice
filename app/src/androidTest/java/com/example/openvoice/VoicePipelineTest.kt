@@ -95,7 +95,7 @@ class VoicePipelineTest {
     @Test
     fun testPipelineEndToEnd() = runBlocking {
         val testAudio = ShortArray(16000) {
-            (Math.sin(2.0 * Math.PI * 440.0 * it / 16000.0) * 8000).toShort()
+            (Math.sin(2.0 * Math.PI * 440.0 * it / 16000.0) * 8000).toInt().toShort()
         }
 
         // VAD test

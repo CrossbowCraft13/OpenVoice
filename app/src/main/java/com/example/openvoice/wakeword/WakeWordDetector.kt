@@ -49,7 +49,7 @@ class WakeWordDetector(context: Context) {
         val features = computeFeatures() ?: return null
         return try {
             val shape = longArrayOf(1, numFrames.toLong(), melBins.toLong(), 1)
-            val tensor = OnnxTensor.createTensor(env, features, shape)
+            val tensor = OnnxTensor.createTensor(env!!, java.nio.FloatBuffer.wrap(features), shape)
             val output = sess.run(mapOf("input" to tensor))
             val scores = (output[0].value as Array<FloatArray>)[0]
             val wakeScore = scores.getOrElse(1) { 0f }
@@ -74,7 +74,7 @@ class WakeWordDetector(context: Context) {
             val mag = fftMagnitude(frame)
             for (m in 0 until melBins) {
                 val bin = ((m.toFloat() / melBins) * mag.size).toInt().coerceIn(0, mag.size - 1)
-                features[f * melBins + m] = Math.ln((mag[bin] + 1e-10f).toDouble()).toFloat()
+                features[f * melBins + m] = Math.log((mag[bin] + 1e-10f).toDouble()).toFloat()
             }
         }
         return features

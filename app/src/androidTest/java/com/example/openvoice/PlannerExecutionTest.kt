@@ -330,7 +330,7 @@ class PlannerExecutionTest {
 
     @Test
     fun plan_goalRequired() {
-        val plan = ExecutionPlan(goal = "")
+        val plan = ExecutionPlan(goal = "", steps = emptyList())
         assertTrue(plan.goal.isEmpty())
     }
 
@@ -458,7 +458,7 @@ class PlannerExecutionTest {
 
     @Test
     fun emptyGoal_plan() {
-        val plan = ExecutionPlan(goal = "")
+        val plan = ExecutionPlan(goal = "", steps = emptyList())
         assertEquals("", plan.goal)
     }
 

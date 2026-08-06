@@ -18,27 +18,27 @@ class OperatorRegistry @Inject constructor() {
     private val ops = mutableMapOf<String, suspend (Context, Map<String, String>) -> OperatorResult>()
 
     init {
-        ops["LAUNCH_APP"] = { ctx, params ->
-            val name = params["app"] ?: return@register OperatorResult(false, "No app specified")
+        ops["LAUNCH_APP"] = launch@ { ctx, params ->
+            val name = params["app"] ?: return@launch OperatorResult(false, "No app specified")
             val pkg = KNOWN_APPS[name.lowercase()] ?: name
             val intent = ctx.packageManager.getLaunchIntentForPackage(pkg)
             if (intent != null) { ctx.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 OperatorResult(true, "Opened $name") }
             else OperatorResult(false, "Can't open $name")
         }
-        ops["SEND_SMS"] = { ctx, params ->
-            val phone = params["contact"] ?: params["phone"] ?: return@register OperatorResult(false, "No recipient")
-            val msg = params["message"] ?: params["text"] ?: return@register OperatorResult(false, "No message")
+        ops["SEND_SMS"] = sms@ { ctx, params ->
+            val phone = params["contact"] ?: params["phone"] ?: return@sms OperatorResult(false, "No recipient")
+            val msg = params["message"] ?: params["text"] ?: return@sms OperatorResult(false, "No message")
             SmsManager.getDefault().sendTextMessage(phone, null, msg, null, null)
             OperatorResult(true, "Message sent")
         }
-        ops["MAKE_CALL"] = { ctx, params ->
-            val phone = params["contact"] ?: params["phone"] ?: return@register OperatorResult(false, "No recipient")
+        ops["MAKE_CALL"] = call@ { ctx, params ->
+            val phone = params["contact"] ?: params["phone"] ?: return@call OperatorResult(false, "No recipient")
             ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             OperatorResult(true, "Dialing $phone")
         }
-        ops["SET_TIMER"] = { ctx, params ->
-            val dur = params["duration"] ?: return@register OperatorResult(false, "No duration")
+        ops["SET_TIMER"] = timer@ { ctx, params ->
+            val dur = params["duration"] ?: return@timer OperatorResult(false, "No duration")
             val secs = parseDuration(dur)
             ctx.startActivity(Intent(AlarmClock.ACTION_SET_TIMER).apply {
                 putExtra(AlarmClock.EXTRA_LENGTH, secs)
@@ -47,8 +47,8 @@ class OperatorRegistry @Inject constructor() {
             })
             OperatorResult(true, "Timer set for ${secs}s")
         }
-        ops["SET_ALARM"] = { ctx, params ->
-            val time = params["time"] ?: return@register OperatorResult(false, "No time")
+        ops["SET_ALARM"] = alarm@ { ctx, params ->
+            val time = params["time"] ?: return@alarm OperatorResult(false, "No time")
             val (h, m) = parseTime(time)
             ctx.startActivity(Intent(AlarmClock.ACTION_SET_ALARM).apply {
                 putExtra(AlarmClock.EXTRA_HOUR, h); putExtra(AlarmClock.EXTRA_MINUTES, m)
@@ -92,7 +92,8 @@ class OperatorRegistry @Inject constructor() {
     }
 
     fun ids() = ops.keys
-    fun exec(id: String, ctx: Context, params: Map<String, String>) = ops[id]?.invoke(ctx, params) ?: OperatorResult(false, "Unknown operator: $id")
+    suspend fun exec(id: String, ctx: Context, params: Map<String, String>) =
+        ops[id]?.invoke(ctx, params) ?: OperatorResult(false, "Unknown operator: $id")
 
     private fun parseDuration(s: String): Int {
         val c = s.lowercase().replace(Regex("(for |a |an | )+"), "")

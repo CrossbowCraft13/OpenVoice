@@ -7,8 +7,8 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.openvoice.accessibility.VoiceAccessibilityService
-import com.example.openvoice.accessibility.VoiceAccessibilityService.SearchCriteria
-import com.example.openvoice.accessibility.VoiceAccessibilityService.UiNode
+import com.example.openvoice.accessibility.SearchCriteria
+import com.example.openvoice.accessibility.UiNode
 import com.example.openvoice.router.CapabilityRouter
 import com.example.openvoice.router.Resolution
 import com.example.openvoice.intent.IntentResult

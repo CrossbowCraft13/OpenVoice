@@ -58,17 +58,7 @@ class ResourceManager @Inject constructor(
         val isCharging = batteryManager?.let {
             it.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS) == BatteryManager.BATTERY_STATUS_CHARGING
         } ?: true
-        val thermalState = try {
-            powerManager?.let {
-                when (it.currentThermalStatus) {
-                    PowerManager.THERMAL_STATUS_NONE, PowerManager.THERMAL_STATUS_LIGHT ->
-                        DeviceProfiler.ThermalStatus.COOL
-                    PowerManager.THERMAL_STATUS_MODERATE -> DeviceProfiler.ThermalStatus.WARM
-                    PowerManager.THERMAL_STATUS_SEVERE -> DeviceProfiler.ThermalStatus.HOT
-                    else -> DeviceProfiler.ThermalStatus.CRITICAL
-                }
-            } ?: DeviceProfiler.ThermalStatus.UNKNOWN
-        } catch (_: Exception) { DeviceProfiler.ThermalStatus.UNKNOWN }
+        val thermalState = detectThermalState(powerManager)
 
         val caps = profiler.getCapabilities()
         val cpuLoad = estimateCpuLoad()
@@ -81,6 +71,25 @@ class ResourceManager @Inject constructor(
             cpuCores = caps.cpuCores,
             cpuLoadPercent = cpuLoad
         ).also { lastState = it }
+    }
+
+    /**
+     * Thermal state via PowerManager#getCurrentThermalStatus (API 29+; minSdk is 26).
+     */
+    private fun detectThermalState(powerManager: PowerManager?): DeviceProfiler.ThermalStatus {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
+            return DeviceProfiler.ThermalStatus.UNKNOWN
+        }
+        return try {
+            when (powerManager?.currentThermalStatus) {
+                null -> DeviceProfiler.ThermalStatus.UNKNOWN
+                PowerManager.THERMAL_STATUS_NONE, PowerManager.THERMAL_STATUS_LIGHT ->
+                    DeviceProfiler.ThermalStatus.COOL
+                PowerManager.THERMAL_STATUS_MODERATE -> DeviceProfiler.ThermalStatus.WARM
+                PowerManager.THERMAL_STATUS_SEVERE -> DeviceProfiler.ThermalStatus.HOT
+                else -> DeviceProfiler.ThermalStatus.CRITICAL
+            }
+        } catch (_: Exception) { DeviceProfiler.ThermalStatus.UNKNOWN }
     }
 
     /**

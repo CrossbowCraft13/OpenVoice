@@ -113,6 +113,11 @@ Create local.properties with:
   ndk.dir=/path/to/Android/Sdk/ndk/25.x.x
 ```
 
+> **Windows users**: `local.properties` is a Java properties file, so backslashes are escape
+> characters. `sdk.dir=C:\Users\me\Android\Sdk` silently becomes `C:UsersmeAndroidSdk` and the
+> build fails with a confusing path error. Use forward slashes instead:
+> `sdk.dir=C:/Users/me/Android/Sdk` (or escape every backslash).
+
 ### Gradle Sync Fails
 ```
 ./gradlew clean

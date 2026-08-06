@@ -84,7 +84,7 @@ class ScreenshotPipeline @Inject constructor(
                 bitmap = bitmap,
                 width = metrics.widthPixels,
                 height = metrics.heightPixels,
-                rotation = metrics.rotation,
+                rotation = getDisplay()?.rotation ?: android.view.Surface.ROTATION_0,
                 captureTimeMs = ms
             )
         } catch (e: Exception) {
@@ -153,7 +153,8 @@ class ScreenshotPipeline @Inject constructor(
      * Check if the display has cutouts (notch, punch-hole).
      */
     fun hasDisplayCutout(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
+        // Display#getCutout requires API 29; minSdk is 26.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
         val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         return wm.defaultDisplay?.cutout != null
     }
@@ -167,16 +168,11 @@ class ScreenshotPipeline @Inject constructor(
     // ── Platform-specific capture ────────────────────────────────
 
     private fun captureWithSurfaceControl(metrics: DisplayMetrics): Bitmap? {
-        return try {
-            // Android 14+: hardware-accelerated screenshot
-            val display = getDisplay()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                val sc = SurfaceControl.createDisplay("openvoice_capture", false)
-                val builder = SurfaceControl.Builder()
-                // Use MediaProjection for capture (requires user consent)
-                null
-            } else null
-        } catch (e: Exception) { null }
+        // SurfaceControl.screenshot is a system-level API not available to apps.
+        // Screen capture requires MediaProjection with explicit user consent,
+        // which is wired up separately (see captureWithMediaProjection).
+        Logger.w("SurfaceControl capture unavailable to apps; falling back.", "Screenshot")
+        return null
     }
 
     private fun captureWithMediaProjection(metrics: DisplayMetrics): Bitmap? {

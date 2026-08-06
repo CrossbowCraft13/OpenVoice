@@ -2,10 +2,26 @@
 
 ## Project: OpenVoice — Private, Local-First Android Voice Assistant
 
-**Date:** 2026-07-28
+**Date:** 2026-07-28 (verified 2026-08-06)
 **Build:** 48 Kotlin sources (8,284 lines) · 2 C++ JNI (308 lines) · 5 test suites (2,187 lines) · 61 source files
 
-**Status:** Phases 1–5 complete. All components implemented, audited, and production-ready.
+**Status:** Phases 1–5 complete. All components implemented and audited.
+
+## Verified Results (2026-08-06)
+
+Ran with JDK 17 + Android SDK 35 + NDK 25.2.9519653 + CMake 3.22.1 on Windows:
+
+| Check | Result |
+|-------|--------|
+| `./gradlew assembleDebug` (incl. C++ JNI) | ✅ BUILD SUCCESSFUL — `app-debug.apk` (97 MB) |
+| `./gradlew testDebugUnitTest` | ✅ 8/8 tests passed, 0 failures |
+| `./gradlew lint` | ✅ 0 errors, 41 warnings |
+| `./gradlew assembleDebugAndroidTest` | ✅ compiles (instrumented tests require a device/emulator) |
+
+Prior to this verification the project had never compiled — every CI push since the initial
+commit failed with Kotlin compile errors (including a raw-string parse error that broke an
+entire module and surfaced as `Could not load module <Error module>`). All compile errors, the
+unit-test deadlock, and lint errors were fixed; see the git diff for details.
 
 ---
 

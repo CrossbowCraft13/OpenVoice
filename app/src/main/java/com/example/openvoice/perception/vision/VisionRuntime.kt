@@ -149,7 +149,7 @@ class VisionRuntime @Inject constructor(
             val keyword = elementKeywords.find { lower.contains(it) }
             if (keyword != null) {
                 // Extract label (the text near the keyword)
-                val parts = line.split(Regex("""["""]"""))
+                val parts = line.split(Regex("[\"“”]"))
                 val label = parts.getOrNull(1) ?: line.trim()
 
                 // Extract position (simple heuristics)

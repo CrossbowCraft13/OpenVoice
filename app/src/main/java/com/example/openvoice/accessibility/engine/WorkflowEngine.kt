@@ -148,13 +148,17 @@ class WorkflowEngine(
             }
 
             if (attempt < step.maxRetries) {
-                delay(500 * (attempt + 1)) // Backoff
+                delay((500L * (attempt + 1))) // Backoff
             }
         }
 
         return StepResult(
             step = step,
-            actionResult = ActionResult.fail(step.action, "Failed after ${step.maxRetries + 1} attempts"),
+            actionResult = ActionResult(
+                action = step.action,
+                success = false,
+                failureReason = "Failed after ${step.maxRetries + 1} attempts"
+            ),
             attempts = step.maxRetries + 1,
             stepTimeMs = System.currentTimeMillis() - start
         )

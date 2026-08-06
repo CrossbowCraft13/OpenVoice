@@ -152,11 +152,13 @@ class PerceptionEngine @Inject constructor(
             val cachedVision = visualCache.getCachedVision(currentApp, currentActivity)
             if (cachedVision != null) {
                 visionResult = cachedVision
-            } else if (screenshot != null && visionRuntime.estimateConfidence() > 0f) {
-                val imageData = screenshotPipeline.encodeToJpeg(screenshot)
-                visionResult = visionRuntime.describe(imageData)
-                if (visionResult != null) {
-                    visualCache.cacheVision(currentApp, currentActivity, visionResult!!)
+            } else if (visionRuntime.estimateConfidence() > 0f) {
+                screenshot?.let { shot ->
+                    val imageData = screenshotPipeline.encodeToJpeg(shot)
+                    visionResult = visionRuntime.describe(imageData)
+                    if (visionResult != null) {
+                        visualCache.cacheVision(currentApp, currentActivity, visionResult!!)
+                    }
                 }
             }
 

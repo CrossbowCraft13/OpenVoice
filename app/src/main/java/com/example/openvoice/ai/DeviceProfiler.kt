@@ -69,7 +69,8 @@ class DeviceProfiler @Inject constructor(
 
     fun getCapabilities(): DeviceCapabilities {
         val memInfo = ActivityManager.MemoryInfo()
-        (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(memInfo)
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        activityManager.getMemoryInfo(memInfo)
 
         val cpuArch = System.getProperty("os.arch") ?: "unknown"
         val cpuCores = Runtime.getRuntime().availableProcessors()
@@ -87,7 +88,7 @@ class DeviceProfiler @Inject constructor(
             hasNnapi = hasNnapi,
             androidApiLevel = Build.VERSION.SDK_INT,
             freeStorageMb = freeStorageMb,
-            isLowRamDevice = memInfo.isLowRamDevice,
+            isLowRamDevice = activityManager.isLowRamDevice,
             thermalStatus = thermalStatus
         )
     }
@@ -176,9 +177,10 @@ class DeviceProfiler @Inject constructor(
     }
 
     private fun detectThermalStatus(): ThermalStatus {
+        // PowerManager#getCurrentThermalStatus requires API 29; minSdk is 26.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return ThermalStatus.UNKNOWN
         return try {
             val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
-            @Suppress("DEPRECATION")
             when (pm.currentThermalStatus) {
                 android.os.PowerManager.THERMAL_STATUS_NONE, android.os.PowerManager.THERMAL_STATUS_LIGHT -> ThermalStatus.COOL
                 android.os.PowerManager.THERMAL_STATUS_MODERATE -> ThermalStatus.WARM
