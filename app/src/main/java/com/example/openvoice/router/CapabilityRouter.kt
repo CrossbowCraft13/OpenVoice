@@ -61,30 +61,31 @@ class CapabilityRouter @Inject constructor() {
             return Resolution.Native(intent, entities)
         }
 
-        // ── Tier 2: Accessibility Service ──────────────────────────────
+        // ── Tier 2: Accessibility gestures ───────────────────────────────
+        // Pure screen-interaction commands are accessibility gestures and route
+        // there even if the service is momentarily disconnected (it can be
+        // (re)started on demand). READ_SCREEN/LAUNCH_APP are handled below.
+        when (intent) {
+            "NAVIGATE_BACK" -> return Resolution.Accessibility(listOf("back"))
+            "NAVIGATE_HOME" -> return Resolution.Accessibility(listOf("home"))
+            "SCROLL" -> {
+                val dir = entities["direction"] ?: "down"
+                return Resolution.Accessibility(listOf("scroll $dir"))
+            }
+            "SCREENSHOT" -> return Resolution.Accessibility(listOf("screenshot"))
+        }
+
+        // ── Tier 3: Accessibility Service (requires it to be running) ─────
+        // Note: LAUNCH_APP never reaches here — Tier 1 handles it natively.
         if (a11yAvailable) {
-            // Screen interaction commands can be handled by Accessibility
-            when (intent) {
-                "NAVIGATE_BACK" -> return Resolution.Accessibility(listOf("back"))
-                "NAVIGATE_HOME" -> return Resolution.Accessibility(listOf("home"))
-                "SCROLL" -> {
-                    val dir = entities["direction"] ?: "down"
-                    return Resolution.Accessibility(listOf("scroll $dir"))
-                }
-                "SCREENSHOT" -> return Resolution.Accessibility(listOf("screenshot"))
-                "LAUNCH_APP" -> {
-                    val app = entities["app"] ?: ""
-                    return Resolution.Accessibility(listOf("open app $app"))
-                }
-                "READ_SCREEN" -> {
-                    // Use Accessibility first. Only escalate to Vision if needed.
-                    Logger.d("Router → Accessibility: describe screen", "Router")
-                    return Resolution.Accessibility(listOf("describe_screen"))
-                }
+            if (intent == "READ_SCREEN") {
+                // Use Accessibility first. Only escalate to Vision if needed.
+                Logger.d("Router → Accessibility: describe screen", "Router")
+                return Resolution.Accessibility(listOf("describe_screen"))
             }
 
             // Check if we need UI interaction for "this" references
-            if (intentResult.requiresClarification && a11yAvailable) {
+            if (intentResult.requiresClarification) {
                 Logger.d("Router → Accessibility: screen context needed", "Router")
                 return Resolution.Accessibility(listOf("describe_screen"))
             }

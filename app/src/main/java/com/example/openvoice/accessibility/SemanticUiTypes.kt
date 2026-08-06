@@ -19,7 +19,9 @@ enum class UiRole {
         fun fromClassName(className: String?): UiRole = when {
             className == null -> UNKNOWN
             className.contains("Button", ignoreCase = true) -> BUTTON
-            className.contains("TextView", ignoreCase = true) || className.contains("EditText", ignoreCase = true) -> TEXT
+            // EditText must be checked before TextView (both match "Text")
+            className.contains("EditText", ignoreCase = true) -> INPUT
+            className.contains("TextView", ignoreCase = true) -> TEXT
             className.contains("Image", ignoreCase = true) -> IMAGE
             className.contains("Switch", ignoreCase = true) -> SWITCH
             className.contains("CheckBox", ignoreCase = true) || className.contains("Checkbox", ignoreCase = true) -> CHECKBOX
@@ -141,6 +143,8 @@ data class ScreenState(
             semantic?.let { collect(it) }
 
             return ScreenState(
+                packageName = tree?.packageName ?: "",
+                activityName = "",
                 semanticTree = semantic,
                 interactiveElements = all.filter { it.interactive && it.isVisible },
                 textInputs = all.filter { it.isEditable && it.isVisible },

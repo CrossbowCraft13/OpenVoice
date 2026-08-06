@@ -359,6 +359,10 @@ class AccessibilityAutomationTest {
         )
 
         val iterations = 100
+        // Warm up the JIT so we measure steady-state throughput, not cold start
+        for (i in 0 until 10) {
+            for (intent in intents) router.resolve(intent)
+        }
         val timings = mutableListOf<Long>()
 
         for (i in 0 until iterations) {

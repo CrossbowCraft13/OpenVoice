@@ -28,7 +28,15 @@ data class UiNode(
     val centerX: Int get() = (bounds.left + bounds.right) / 2
     val centerY: Int get() = (bounds.top + bounds.bottom) / 2
     val role: String get() = className?.substringAfterLast('.') ?: "unknown"
-    val label: String get() = text ?: description ?: viewId ?: role
+    /**
+     * Best label: falls back through text → description → viewId → role,
+     * treating blank (empty/whitespace) values as missing so that nodes with
+     * an empty text but a real description still get a useful label.
+     */
+    val label: String get() = text?.takeIf { it.isNotBlank() }
+        ?: description?.takeIf { it.isNotBlank() }
+        ?: viewId?.takeIf { it.isNotBlank() }
+        ?: role
 }
 
 /**

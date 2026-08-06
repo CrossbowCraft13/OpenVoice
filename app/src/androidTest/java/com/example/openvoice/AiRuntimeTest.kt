@@ -330,6 +330,10 @@ class AiRuntimeTest {
             IntentResult("SET_TIMER", 0.85f, mapOf("duration" to "5 minutes"))
         )
         val iterations = 100
+        // Warm up the JIT before timing
+        for (i in 0 until 10) {
+            for (intent in intents) router.resolve(intent)
+        }
         val timings = mutableListOf<Long>()
 
         for (i in 0 until iterations) {

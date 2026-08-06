@@ -44,7 +44,7 @@ data class Memory(
     val value: String,            // The stored content
     val summary: String = "",     // Optional short description
     val embedding: FloatArray? = null,  // Vector for semantic search
-    val ttlDays: Int = 365,       // Days before auto-forgetting
+    val ttlDays: Int = category.ttlDays, // Defaults to the category's TTL
     val importance: Float = 0.5f, // 0.0–1.0
     val accessCount: Int = 0,
     val pinned: Boolean = false,  // User-protected from forgetting

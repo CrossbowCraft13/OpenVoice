@@ -142,7 +142,7 @@ class KnowledgeGraph @Inject constructor(
      * e.g., find("Hunter", "prefers") → ["Spotify"]
      */
     suspend fun find(subject: String, predicate: String): List<String> = withContext(Dispatchers.IO) {
-        query("SELECT object FROM relations WHERE subject = ? AND predicate = ? ORDER BY confidence DESC",
+        query("SELECT * FROM relations WHERE subject = ? AND predicate = ? ORDER BY confidence DESC",
             arrayOf(subject, predicate)).map { it.obj }
     }
 
@@ -193,19 +193,22 @@ class KnowledgeGraph @Inject constructor(
     suspend fun getSubgraph(seed: String, depth: Int = 2): List<Relation> =
         withContext(Dispatchers.IO) {
             val results = mutableSetOf<Relation>()
-            var current = setOf(seed.lowercase())
+            // Keep the original case: SQLite string equality is case-sensitive,
+            // and stored triples retain the case they were written with.
+            var current = setOf(seed)
             val visited = mutableSetOf<String>()
 
             for (i in 0 until depth) {
                 val next = mutableSetOf<String>()
                 for (node in current) {
-                    if (node in visited) continue
-                    visited.add(node)
+                    val key = node.lowercase()
+                    if (key in visited) continue
+                    visited.add(key)
                     val relations = findRelated(node)
                     results.addAll(relations)
                     relations.forEach { rel ->
-                        next.add(rel.subject.lowercase())
-                        next.add(rel.obj.lowercase())
+                        next.add(rel.subject)
+                        next.add(rel.obj)
                     }
                 }
                 current = next

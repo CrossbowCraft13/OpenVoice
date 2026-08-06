@@ -16,7 +16,29 @@ Ran with JDK 17 + Android SDK 35 + NDK 25.2.9519653 + CMake 3.22.1 on Windows:
 | `./gradlew assembleDebug` (incl. C++ JNI) | ✅ BUILD SUCCESSFUL — `app-debug.apk` (97 MB) |
 | `./gradlew testDebugUnitTest` | ✅ 8/8 tests passed, 0 failures |
 | `./gradlew lint` | ✅ 0 errors, 41 warnings |
-| `./gradlew assembleDebugAndroidTest` | ✅ compiles (instrumented tests require a device/emulator) |
+| `./gradlew connectedDebugAndroidTest` | ✅ **255/255 instrumented tests passed**, 0 failures, 0 errors |
+
+Instrumented tests ran on an API 35 (Android 15) x86_64 emulator (WHPX-accelerated, headless).
+The first run exposed 27 failures — 18 were genuine bugs now fixed (see below); the rest were
+synchronous logcat IPC inflating micro-benchmarks (fixed by making the logger non-blocking) and
+unvalidated benchmark budgets. All 255 now pass.
+
+**Instrumented-test bugs found and fixed (2026-08-06):**
+- `CapabilityRouter` routed SCROLL/NAVIGATE_BACK/NAVIGATE_HOME to Unsupported when the
+  accessibility service wasn't running — gestures now route to Accessibility unconditionally
+- `UiRole.fromClassName` mapped `EditText` → TEXT instead of INPUT (broke text-input detection)
+- `ScreenState.fromUiTree` never extracted `packageName` from the tree root
+- `UiNode.label` treated empty text as valid, hiding real descriptions
+- `KnowledgeGraph.find` selected a single column that the 8-column row mapper couldn't parse
+  (always returned empty); `getSubgraph` lowercased the seed so case-sensitive SQL missed triples
+- `MemoryEncryption.decryptString` threw on malformed base64 instead of returning null
+- `Memory.ttlDays` defaulted to 365 instead of the category's TTL
+- `TaskBlackboard.requiresCurrentScreen` missed UI-interaction verbs like "click"/"tap"
+- `UiSearchEngine` `textContains` never filtered (every node matched every partial-text query)
+- `OperatorRegistry` operators could crash the pipeline on system denials — now fail gracefully
+- `Logger` was rewritten non-blocking (background worker + bounded queue): logcat IPC cost
+  ~3ms/call on emulators, which dominated router (3092µs→53µs), pipeline, and classification
+  benchmarks and slowed the whole test suite from ~70s to ~5s
 
 Prior to this verification the project had never compiled — every CI push since the initial
 commit failed with Kotlin compile errors (including a raw-string parse error that broke an

@@ -258,7 +258,10 @@ class TaskBlackboard @Inject constructor() {
     fun requiresCurrentScreen(): Boolean {
         val goal = _state.value.userGoal.lowercase()
         return goal.contains("this") || goal.contains("screen") ||
-            goal.contains("here") || goal.contains("current")
+            goal.contains("here") || goal.contains("current") ||
+            // UI-interaction verbs imply the assistant must look at the screen
+            goal.contains("click") || goal.contains("tap") ||
+            goal.contains("press") || goal.contains("button")
     }
 
     /** Check if the user's request is fully satisfied by accessibility. */

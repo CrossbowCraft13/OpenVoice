@@ -134,34 +134,22 @@ class AccessibilityIntelligenceTest {
                     ))
             )
         )
-        return ScreenState.fromUiTree(root.let {
-            com.example.openvoice.accessibility.UiNode(
-                text = it.text, description = it.contentDescription,
-                className = it.className, packageName = it.packageName,
-                viewId = it.viewId, bounds = it.bounds,
-                isClickable = it.isClickable, isEditable = it.isEditable,
-                isScrollable = it.isScrollable, isChecked = it.isChecked ?: false,
-                isCheckable = it.isCheckable, isFocusable = it.isFocusable,
-                isEnabled = it.isEnabled, isPassword = it.isPassword,
-                isVisible = it.isVisible, depth = it.depth,
-                children = it.children.map { childNode ->
-                    com.example.openvoice.accessibility.UiNode(
-                        text = childNode.text, description = childNode.contentDescription,
-                        className = childNode.className, packageName = childNode.packageName,
-                        viewId = childNode.viewId, bounds = childNode.bounds,
-                        isClickable = childNode.isClickable, isEditable = childNode.isEditable,
-                        isScrollable = childNode.isScrollable,
-                        isChecked = childNode.isChecked ?: false,
-                        isCheckable = childNode.isCheckable,
-                        isFocusable = childNode.isFocusable,
-                        isEnabled = childNode.isEnabled, isPassword = childNode.isPassword,
-                        isVisible = childNode.isVisible, depth = childNode.depth,
-                        children = emptyList()
-                    )
-                }
-            )
-        })
+        return ScreenState.fromUiTree(semanticToUiNode(root))
     }
+
+    /** Recursively convert the sample semantic tree into raw UiNodes. */
+    private fun semanticToUiNode(node: SemanticUiNode): com.example.openvoice.accessibility.UiNode =
+        com.example.openvoice.accessibility.UiNode(
+            text = node.text, description = node.contentDescription,
+            className = node.className, packageName = node.packageName,
+            viewId = node.viewId, bounds = node.bounds,
+            isClickable = node.isClickable, isEditable = node.isEditable,
+            isScrollable = node.isScrollable, isChecked = node.isChecked ?: false,
+            isCheckable = node.isCheckable, isFocusable = node.isFocusable,
+            isEnabled = node.isEnabled, isPassword = node.isPassword,
+            isVisible = node.isVisible, depth = node.depth,
+            children = node.children.map { semanticToUiNode(it) }
+        )
 
     @Before
     fun setup() {
@@ -744,6 +732,15 @@ class AccessibilityIntelligenceTest {
             IntentResult("SEND_SMS", 0.9f, mapOf("contact" to "Mom", "message" to "Hi")),
             IntentResult("SET_TIMER", 0.95f, mapOf("duration" to "5 minutes"))
         )
+
+        // Warm up the JIT before timing so we measure steady-state latency
+        for (i in 0 until 10) {
+            val warmIntent = intents[i % intents.size]
+            router.resolve(warmIntent)
+            blackboard.startNewTask(warmIntent.intent, warmIntent.intent)
+            blackboard.setIntent(warmIntent, router.resolve(warmIntent))
+            blackboard.recordSuccess("warmup", 0)
+        }
 
         for (i in 0 until iterations) {
             val start = System.nanoTime()

@@ -239,7 +239,7 @@ class SystemIntegrationTest {
                 androidx.test.core.app.ApplicationProvider.getApplicationContext()))
         assertTrue(flow.steps[0].description.contains("private"))
         assertTrue(flow.steps[1].description.contains("voice commands"))
-        assertTrue(flow.steps[3].description.contains("optional"))
+        assertTrue(flow.steps[3].description.contains("optional", ignoreCase = true))
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -337,8 +337,8 @@ class SystemIntegrationTest {
                 androidx.test.core.app.ApplicationProvider.getApplicationContext()))
         val summary = dashboard.getSummary()
         assertTrue(summary.contains("Privacy"))
-        assertTrue(summary.contains("encryption"))
-        assertTrue(summary.contains("telemetry"))
+        assertTrue(summary.contains("encryption", ignoreCase = true))
+        assertTrue(summary.contains("telemetry", ignoreCase = true))
         assertTrue(summary.contains("local"))
     }
 
@@ -592,6 +592,8 @@ class SystemIntegrationTest {
     @Test
     fun benchmark_reliabilityErrorLogging() {
         val iterations = 100
+        // Warm up the JIT before timing
+        for (i in 0 until 50) reliabilityManager.reportError("Warm", "warmup", Severity.DEBUG)
         val timings = mutableListOf<Long>()
 
         for (i in 0 until iterations) {

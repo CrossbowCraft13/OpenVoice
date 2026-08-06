@@ -92,8 +92,17 @@ class OperatorRegistry @Inject constructor() {
     }
 
     fun ids() = ops.keys
-    suspend fun exec(id: String, ctx: Context, params: Map<String, String>) =
-        ops[id]?.invoke(ctx, params) ?: OperatorResult(false, "Unknown operator: $id")
+    suspend fun exec(id: String, ctx: Context, params: Map<String, String>): OperatorResult {
+        val op = ops[id] ?: return OperatorResult(false, "Unknown operator: $id")
+        return try {
+            op(ctx, params)
+        } catch (e: Exception) {
+            // A system denial (e.g. activity not startable, SMS permission
+            // missing) must never crash the voice pipeline.
+            Logger.e("Operator $id failed: ${e.message}", "Operator", e)
+            OperatorResult(false, "${id} failed: ${e.message}")
+        }
+    }
 
     private fun parseDuration(s: String): Int {
         val c = s.lowercase().replace(Regex("(for |a |an | )+"), "")

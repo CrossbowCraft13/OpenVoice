@@ -58,7 +58,7 @@ data class ScreenContext(
     val summary: String get() = buildString {
         appendLine("📱 $packageName")
         if (activityName.isNotEmpty()) appendLine("   Activity: $activityName")
-        appendLine("   Elements: ${elements.size} (a11y) + ${visualElements.size} (visual)")
+        appendLine("   ${elements.size} elements (a11y) + ${visualElements.size} (vision)")
         appendLine("   Text blocks: ${textBlocks.size}")
         appendLine("   Dialogs: ${if (hasDialogs) dialogText.joinToString(", ") else "none"}")
         appendLine("   Sources: ${sourceConfidence.entries.joinToString(", ") { "${it.key}=${"%.2f".format(it.value)}" }}")

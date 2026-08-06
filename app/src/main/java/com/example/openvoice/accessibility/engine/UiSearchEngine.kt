@@ -127,7 +127,7 @@ class UiSearchEngine {
             val nodeText = node.text?.lowercase() ?: ""
             val nodeDesc = node.contentDescription?.lowercase() ?: ""
             if (nodeText.contains(search) || nodeDesc.contains(search)) score += 0.3f
-            else if (query.text != null) return 0f // exact text required but not found
+            else return 0f // text/textContains required but not found
         }
 
         // ── Content description ────────────────────────────────────

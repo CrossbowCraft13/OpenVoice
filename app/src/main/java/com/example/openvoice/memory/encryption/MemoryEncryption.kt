@@ -129,9 +129,15 @@ class MemoryEncryption @Inject constructor(
 
     /**
      * Decrypt a string that was encrypted with encryptString().
+     * Returns null on malformed input instead of throwing.
      */
     fun decryptString(ciphertext: String): String? {
-        val encrypted = android.util.Base64.decode(ciphertext, android.util.Base64.NO_WRAP)
+        val encrypted = try {
+            android.util.Base64.decode(ciphertext, android.util.Base64.NO_WRAP)
+        } catch (e: IllegalArgumentException) {
+            Logger.w("DecryptString: invalid base64 input", "Memory")
+            return null
+        }
         val decrypted = decrypt(encrypted) ?: return null
         return String(decrypted, Charsets.UTF_8)
     }
