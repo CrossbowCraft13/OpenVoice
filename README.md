@@ -45,7 +45,7 @@
 - **Zero network requests** — The app makes no hidden connections
 - **AES-256-GCM encryption** — All memories encrypted at rest via Android Keystore
 - **Full transparency** — Privacy dashboard shows every stored memory
-- **You control your data** — Browse, edit, export, or delete anything
+- **You control your data** — Browse, edit, export, or delete anything. (WE DONT WANT YOU DATA!!!)
 
 ## 🏗 Architecture
 
