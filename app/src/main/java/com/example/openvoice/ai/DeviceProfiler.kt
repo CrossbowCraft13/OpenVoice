@@ -32,7 +32,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class DeviceProfiler @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context?
 ) {
     data class DeviceCapabilities(
         val totalRamMb: Long,
@@ -69,7 +69,21 @@ class DeviceProfiler @Inject constructor(
 
     fun getCapabilities(): DeviceCapabilities {
         val memInfo = ActivityManager.MemoryInfo()
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val activityManager = context?.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        if (activityManager == null) {
+            // No Android environment (e.g. JVM unit tests): report safe defaults
+            // rather than crashing — the model recommendation then falls to NONE.
+            return DeviceCapabilities(
+                totalRamMb = 0, availableRamMb = 0,
+                cpuCores = Runtime.getRuntime().availableProcessors(),
+                cpuArch = System.getProperty("os.arch") ?: "unknown",
+                hasVulkan = false,
+                hasNnapi = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P,
+                androidApiLevel = Build.VERSION.SDK_INT,
+                freeStorageMb = 0, isLowRamDevice = false,
+                thermalStatus = ThermalStatus.UNKNOWN
+            )
+        }
         activityManager.getMemoryInfo(memInfo)
 
         val cpuArch = System.getProperty("os.arch") ?: "unknown"
@@ -171,8 +185,8 @@ class DeviceProfiler @Inject constructor(
     private fun checkVulkanSupport(): Boolean {
         return try {
             // Check if Vulkan is available via PackageManager
-            val pm = context.packageManager
-            pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_VERSION)
+            val pm = context?.packageManager
+            pm?.hasSystemFeature(android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_VERSION) ?: false
         } catch (e: Exception) { false }
     }
 
@@ -180,7 +194,8 @@ class DeviceProfiler @Inject constructor(
         // PowerManager#getCurrentThermalStatus requires API 29; minSdk is 26.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return ThermalStatus.UNKNOWN
         return try {
-            val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            val pm = context?.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+                ?: return ThermalStatus.UNKNOWN
             when (pm.currentThermalStatus) {
                 android.os.PowerManager.THERMAL_STATUS_NONE, android.os.PowerManager.THERMAL_STATUS_LIGHT -> ThermalStatus.COOL
                 android.os.PowerManager.THERMAL_STATUS_MODERATE -> ThermalStatus.WARM

@@ -54,18 +54,39 @@ excluded from the metric. Measured against the 80% roadmap gate:
 
 | Suite | INSTRUCTION | LINE | BRANCH |
 |-------|------------:|-----:|-------:|
-| Unit tests (8) | 2.07% | 2.52% | 1.34% |
-| Instrumented tests (255, API 35 emulator) | 37.68% | 38.71% | 20.13% |
-| **Merged (unit + instrumented)** | **39.75%** | **41.23%** | **21.47%** |
+| Unit tests (49) | 7.96% | 8.61% | 4.58% |
+| Instrumented tests (258, API 35 emulator) | 40.30% | 41.98% | 21.87% |
+| **Merged (unit + instrumented)** | **44.46%** | **46.44%** | **25.57%** |
 
-**Roadmap gate: 80% line coverage — currently at 41.2%, a ~39-point gap.** The instrumented
-suite is the workhorse (covers ~19× more instructions than unit tests). Zero-coverage areas are
-entirely untested by either suite: `audio`, `pipeline`, `stt`, `tts`, `vad`, `wakeword`, `ui`,
-`service`, and `di`. Best-covered: `intent` (96.6%), `plugin` (92.3%), `onboarding` (87.2%),
-`developer` (80.1%). To close the gap the highest-leverage additions are unit tests for the
-voice pipeline classes (`stt`/`tts`/`vad`/`wakeword`/`pipeline`) and instrumented tests for
-`ui`/`service` — see the JaCoCo HTML reports under `app/build/reports/jacoco/` for per-class
-breakdowns.
+**Roadmap gate: 80% line coverage — now at 46.4%, a ~34-point gap** (was 41.2% / ~39-point
+gap on the first measurement). One coverage attack pass (37 new unit tests + 3 new instrumented
+tests) moved eight previously-zero packages off the floor:
+
+| Package | Before | After |
+|---------|-------:|------:|
+| `ui` | 0% | 86.7% |
+| `wakeword` | 0% | 74.0% |
+| `audio` | 0% | 70.0% |
+| `vad` | 0% | 66.1% |
+| `pipeline` | 0% | 37.8% |
+| `stt` | 0% | 37.1% |
+| `tts` | 0% | 31.1% |
+| `service` | 0% | 18.6% |
+| `di` | 0% | 2.6% |
+
+Testing technique: several engines accept a null Context and degrade gracefully (ONNX loaders
+fall back to energy-based detection, operators wrap failures), which makes their logic unit-
+testable on the JVM — constructors were widened to `Context?` to make this explicit, and the
+ONNX loaders now catch `Throwable` so a missing model can never crash the app. The wake-word
+DSP (FFT + mel) is exposed as `internal` and unit-tested directly. The test suite caught and
+fixed a real production bug: the radix-2 FFT assumed a power-of-two window but `frameSize = 80`,
+so it read past the array end (crashing the moment the wake-word model loaded and the buffer
+filled); it now zero-pads to the next power of two.
+
+Still-zero areas: `perception/vision` (1.7%, needs an actual multimodal model) and the root
+package (13 instr). The next highest-leverage targets are the accessibility engine (19.3%),
+memory (33.6%), ai (33.9%), and perception (35.2%) — all driven by instrumented tests on-
+device. See the JaCoCo HTML reports under `app/build/reports/jacoco/` for per-class breakdowns.
 
 ---
 

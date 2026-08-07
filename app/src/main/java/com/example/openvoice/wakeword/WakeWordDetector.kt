@@ -11,7 +11,7 @@ sealed class WakeWordEvent {
     object Idle : WakeWordEvent()
 }
 
-class WakeWordDetector(context: Context) {
+class WakeWordDetector(context: Context?) {
 
     private var env: OrtEnvironment? = null
     private var session: OrtSession? = null
@@ -27,10 +27,12 @@ class WakeWordDetector(context: Context) {
     init {
         try {
             env = OrtEnvironment.getEnvironment("wakeword")
-            val bytes = context.assets.open("openwakeword.onnx").use { it.readBytes() }
+            val bytes = context!!.assets.open("openwakeword.onnx").use { it.readBytes() }
             session = env?.createSession(bytes)
             Logger.i("OpenWakeWord loaded", "WakeWord")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            // Missing model asset / no ONNX runtime: the detector must degrade
+            // gracefully (returns null from processAudio) rather than crash.
             Logger.e("OpenWakeWord load failed: ${e.message}", "WakeWord")
         }
     }
@@ -40,10 +42,7 @@ class WakeWordDetector(context: Context) {
         val now = System.currentTimeMillis()
         if (now - debounceMs < 2000) return null
 
-        for (s in frame) {
-            audioBuffer[bufPos % audioBuffer.size] = s.toFloat() / 32768f
-            bufPos++
-        }
+        feedAudio(frame)
         if (bufPos < frameSize * numFrames) return null
 
         val features = computeFeatures() ?: return null
@@ -62,7 +61,16 @@ class WakeWordDetector(context: Context) {
         }
     }
 
-    private fun computeFeatures(): FloatArray? {
+    // Internal so the DSP (windowing + FFT + mel) can be unit tested directly
+    // on the JVM, independent of the ONNX session.
+    internal fun feedAudio(frame: ShortArray) {
+        for (s in frame) {
+            audioBuffer[bufPos % audioBuffer.size] = s.toFloat() / 32768f
+            bufPos++
+        }
+    }
+
+    internal fun computeFeatures(): FloatArray? {
         val features = FloatArray(numFrames * melBins)
         for (f in 0 until numFrames) {
             val offset = (bufPos - numFrames * frameSize + f * frameSize).mod(audioBuffer.size)
@@ -80,8 +88,14 @@ class WakeWordDetector(context: Context) {
         return features
     }
 
-    private fun fftMagnitude(frame: FloatArray): FloatArray {
-        val n = frame.size
+    internal fun fftMagnitude(frame: FloatArray): FloatArray {
+        // The radix-2 FFT requires a power-of-two length. The frame size (80
+        // samples, 5ms @16kHz) is not a power of two, so pad with zeros to the
+        // next power of two — zero-padding is the correct DFT for this case.
+        // (Without padding this loop read past the array end and crashed once
+        // the buffer filled with the ONNX model loaded.)
+        var n = 1
+        while (n < frame.size) n = n shl 1
         val re = FloatArray(n) { if (it < frame.size) frame[it] else 0f }
         val im = FloatArray(n)
         var j = 0

@@ -15,14 +15,17 @@ import javax.inject.Singleton
 @Singleton
 class OperatorRegistry @Inject constructor() {
 
-    private val ops = mutableMapOf<String, suspend (Context, Map<String, String>) -> OperatorResult>()
+    // Context is nullable so operators can be unit-tested on the JVM: those that
+    // touch Android services fail gracefully (inside exec's try/catch), while
+    // context-free operators (HELP/STOP/QUERY) still succeed.
+    private val ops = mutableMapOf<String, suspend (Context?, Map<String, String>) -> OperatorResult>()
 
     init {
         ops["LAUNCH_APP"] = launch@ { ctx, params ->
             val name = params["app"] ?: return@launch OperatorResult(false, "No app specified")
             val pkg = KNOWN_APPS[name.lowercase()] ?: name
-            val intent = ctx.packageManager.getLaunchIntentForPackage(pkg)
-            if (intent != null) { ctx.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            val intent = ctx!!.packageManager.getLaunchIntentForPackage(pkg)
+            if (intent != null) { ctx!!.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 OperatorResult(true, "Opened $name") }
             else OperatorResult(false, "Can't open $name")
         }
@@ -34,13 +37,13 @@ class OperatorRegistry @Inject constructor() {
         }
         ops["MAKE_CALL"] = call@ { ctx, params ->
             val phone = params["contact"] ?: params["phone"] ?: return@call OperatorResult(false, "No recipient")
-            ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            ctx!!.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             OperatorResult(true, "Dialing $phone")
         }
         ops["SET_TIMER"] = timer@ { ctx, params ->
             val dur = params["duration"] ?: return@timer OperatorResult(false, "No duration")
             val secs = parseDuration(dur)
-            ctx.startActivity(Intent(AlarmClock.ACTION_SET_TIMER).apply {
+            ctx!!.startActivity(Intent(AlarmClock.ACTION_SET_TIMER).apply {
                 putExtra(AlarmClock.EXTRA_LENGTH, secs)
                 putExtra(AlarmClock.EXTRA_SKIP_UI, false)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -50,7 +53,7 @@ class OperatorRegistry @Inject constructor() {
         ops["SET_ALARM"] = alarm@ { ctx, params ->
             val time = params["time"] ?: return@alarm OperatorResult(false, "No time")
             val (h, m) = parseTime(time)
-            ctx.startActivity(Intent(AlarmClock.ACTION_SET_ALARM).apply {
+            ctx!!.startActivity(Intent(AlarmClock.ACTION_SET_ALARM).apply {
                 putExtra(AlarmClock.EXTRA_HOUR, h); putExtra(AlarmClock.EXTRA_MINUTES, m)
                 putExtra(AlarmClock.EXTRA_SKIP_UI, false); addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
@@ -64,11 +67,11 @@ class OperatorRegistry @Inject constructor() {
                 "apps" -> Settings.ACTION_APPLICATION_SETTINGS; "battery" -> Settings.ACTION_BATTERY_SAVER_SETTINGS
                 else -> Settings.ACTION_SETTINGS
             }
-            ctx.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            ctx!!.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             OperatorResult(true, "Opened $target settings")
         }
         ops["ADJUST_VOLUME"] = { ctx, params ->
-            val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val am = ctx!!.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val level = params["level"]
             val dir = params["direction"]
             when {
@@ -92,7 +95,7 @@ class OperatorRegistry @Inject constructor() {
     }
 
     fun ids() = ops.keys
-    suspend fun exec(id: String, ctx: Context, params: Map<String, String>): OperatorResult {
+    suspend fun exec(id: String, ctx: Context?, params: Map<String, String>): OperatorResult {
         val op = ops[id] ?: return OperatorResult(false, "Unknown operator: $id")
         return try {
             op(ctx, params)

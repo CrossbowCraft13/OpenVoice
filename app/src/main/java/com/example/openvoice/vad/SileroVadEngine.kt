@@ -6,7 +6,7 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 
-class SileroVadEngine(context: Context) {
+class SileroVadEngine(context: Context?) {
 
     private var env: OrtEnvironment? = null
     private var session: OrtSession? = null
@@ -15,10 +15,13 @@ class SileroVadEngine(context: Context) {
     init {
         try {
             env = OrtEnvironment.getEnvironment("silero")
-            val modelBytes = context.assets.open("silero_vad.onnx").use { it.readBytes() }
+            val modelBytes = context!!.assets.open("silero_vad.onnx").use { it.readBytes() }
             session = env?.createSession(modelBytes)
             Logger.i("Silero VAD loaded", "VAD")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            // Model/assets unavailable (missing asset, no ONNX runtime on this
+            // platform, ...). A VAD load failure must never crash the app — the
+            // energy-based fallback keeps the pipeline functional.
             Logger.e("Silero VAD load failed: ${e.message}", "VAD")
         }
     }

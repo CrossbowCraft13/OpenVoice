@@ -16,7 +16,7 @@ sealed class VadEvent {
 }
 
 @Singleton
-class VadManager @Inject constructor(context: Context) : AudioFrameListener {
+class VadManager @Inject constructor(context: Context?) : AudioFrameListener {
 
     private val engine = SileroVadEngine(context)
     private val _state = MutableStateFlow(SpeechState.SILENCE)

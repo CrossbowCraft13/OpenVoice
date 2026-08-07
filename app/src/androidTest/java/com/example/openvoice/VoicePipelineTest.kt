@@ -1,14 +1,38 @@
 package com.example.openvoice
 
+import android.Manifest
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.rule.GrantPermissionRule
+import com.example.openvoice.ai.AiSettings
+import com.example.openvoice.ai.DeviceProfiler
+import com.example.openvoice.ai.InferenceEngine
+import com.example.openvoice.ai.ModelManager
+import com.example.openvoice.audio.AudioCaptureManager
+import com.example.openvoice.developer.DeveloperConsole
 import com.example.openvoice.intent.IntentClassifier
 import com.example.openvoice.operator.OperatorRegistry
+import com.example.openvoice.perception.OcrEngine
+import com.example.openvoice.perception.PerceptionEngine
+import com.example.openvoice.perception.ScreenshotPipeline
+import com.example.openvoice.perception.VisualMemoryCache
+import com.example.openvoice.perception.vision.VisionRuntime
+import com.example.openvoice.pipeline.PipelineEvent
+import com.example.openvoice.pipeline.VoicePipeline
+import com.example.openvoice.router.CapabilityRouter
+import com.example.openvoice.stt.WhisperSttEngine
+import com.example.openvoice.task.TaskBlackboard
+import com.example.openvoice.tts.PiperTtsEngine
 import com.example.openvoice.util.Logger
+import com.example.openvoice.vad.VadManager
+import com.example.openvoice.wakeword.WakeWordDetector
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.*
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -140,5 +164,47 @@ class VoicePipelineTest {
         val avg = timings.average().toLong()
         println("Intent classification benchmark (n=$iterations): avg=${avg}ms, min=${timings.min()}, max=${timings.max()}")
         assertTrue("Average classification < 10ms", avg < 10)
+    }
+
+    @get:Rule
+    val permissionRule: GrantPermissionRule =
+        GrantPermissionRule.grant(Manifest.permission.RECORD_AUDIO)
+
+    @Test
+    fun pipelineLifecycleHandlesMissingModelsGracefully() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val profiler = DeviceProfiler(context)
+        val settings = AiSettings(context)
+        val engine = InferenceEngine(context, settings, profiler)
+        val modelManager = ModelManager(context, profiler, settings)
+        val router = CapabilityRouter()
+        val console = DeveloperConsole(profiler, engine, modelManager, router)
+        val perception = PerceptionEngine(
+            ScreenshotPipeline(context),
+            OcrEngine(context),
+            VisionRuntime(engine),
+            VisualMemoryCache(),
+            TaskBlackboard()
+        )
+        val pipeline = VoicePipeline(
+            context, AudioCaptureManager(context), VadManager(context),
+            WakeWordDetector(context), WhisperSttEngine(context), PiperTtsEngine(context),
+            IntentClassifier(), OperatorRegistry(), router, console, perception
+        )
+
+        // Models are absent on the test image; init must still succeed gracefully.
+        assertTrue(pipeline.initialize())
+
+        pipeline.startListening()
+        // Either audio capture starts (permission granted -> ListeningStarted)
+        // or it fails gracefully (-> Error event). Never a crash.
+        val outcome = withTimeoutOrNull(5_000) {
+            pipeline.events.first { it is PipelineEvent.ListeningStarted || it is PipelineEvent.Error }
+        }
+        assertNotNull("pipeline should emit ListeningStarted or Error", outcome)
+
+        pipeline.stopListening()
+        assertEquals(PipelineEvent.Idle, pipeline.events.value)
+        pipeline.release()
     }
 }

@@ -6,7 +6,7 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-class WhisperSttEngine(private val context: Context) {
+class WhisperSttEngine(private val context: Context?) {
 
     companion object {
         private var nativeLoaded = false

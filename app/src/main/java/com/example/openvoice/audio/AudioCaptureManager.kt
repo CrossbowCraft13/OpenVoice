@@ -21,7 +21,7 @@ fun interface AudioFrameListener {
 enum class AudioState { IDLE, LISTENING, ERROR }
 
 @Singleton
-class AudioCaptureManager @Inject constructor(private val context: Context) {
+class AudioCaptureManager @Inject constructor(private val context: Context?) {
 
     companion object {
         const val SAMPLE_RATE = 16000
@@ -46,7 +46,7 @@ class AudioCaptureManager @Inject constructor(private val context: Context) {
 
     suspend fun start(): Boolean = withContext(Dispatchers.IO) {
         if (capturing) return@withContext true
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+        if (context == null || ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
             Logger.e("RECORD_AUDIO permission not granted", "Audio")
             _state.value = AudioState.ERROR
