@@ -36,6 +36,24 @@ class VisionRuntime @Inject constructor(
 ) {
     private var lastResult: VisionResult? = null
 
+    companion object {
+        /** Confidence assigned to vision-provided content. */
+        private const val VISION_CONFIDENCE = 0.74f
+    }
+
+    /**
+     * Test seam: when set, describe() returns this text as a fake vision result
+     * even though no multimodal model is loaded. Lets the full vision fusion
+     * path (perceive → vision → cache) be exercised on-device.
+     */
+    internal var fallbackResult: String? = null
+
+    /**
+     * Test seam: overrides estimateConfidence() so the perception engine's
+     * vision branch can be driven without a loaded model.
+     */
+    internal var confidenceOverride: Float? = null
+
     /**
      * Describe the content of a screen image.
      * Returns a high-level description of what's visible.
@@ -44,6 +62,14 @@ class VisionRuntime @Inject constructor(
         val start = System.currentTimeMillis()
 
         if (!engine.isReady) {
+            val fallback = fallbackResult
+            if (fallback != null) {
+                return VisionResult(
+                    description = fallback,
+                    latencyMs = System.currentTimeMillis() - start,
+                    confidence = VISION_CONFIDENCE
+                )
+            }
             Logger.w("Vision model not loaded — using fallback", "Vision")
             return VisionResult(
                 description = "Vision model not available. Enable AI Runtime with a multimodal model for screen descriptions.",
@@ -116,12 +142,12 @@ class VisionRuntime @Inject constructor(
      * Get confidence that vision can describe this image.
      */
     fun estimateConfidence(): Float {
-        return if (engine.isReady) 0.74f else 0f
+        return confidenceOverride ?: if (engine.isReady) VISION_CONFIDENCE else 0f
     }
 
     // ── Private ─────────────────────────────────────────────────
 
-    private fun buildVisionPrompt(task: String, imageData: ByteArray): String {
+    internal fun buildVisionPrompt(task: String, imageData: ByteArray): String {
         // Florence-2 format:
         // "<IMAGE>\n<TASK>Describe what you see."
         // SmolVLM format:

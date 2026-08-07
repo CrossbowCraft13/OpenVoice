@@ -57,6 +57,13 @@ class ScreenshotPipeline @Inject constructor(
     private var lastScreenMetrics: DisplayMetrics? = null
 
     /**
+     * Test seam: when set, captureFullScreen returns this bitmap instead of the
+     * platform capture paths (which need MediaProjection user consent). Lets the
+     * full capture → OCR → vision pipeline run on-device without consent.
+     */
+    internal var captureOverride: (() -> Bitmap?)? = null
+
+    /**
      * Capture the full screen.
      * Uses SurfaceControl.screenshot on Android 14+, falls back to MediaProjection.
      */
@@ -65,12 +72,13 @@ class ScreenshotPipeline @Inject constructor(
             val start = System.currentTimeMillis()
             val metrics = getScreenMetrics()
 
-            val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                // Android 14+ has hardware-accelerated screenshot
-                captureWithSurfaceControl(metrics)
-            } else {
-                captureWithMediaProjection(metrics)
-            }
+            val bitmap = captureOverride?.invoke() ?:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    // Android 14+ has hardware-accelerated screenshot
+                    captureWithSurfaceControl(metrics)
+                } else {
+                    captureWithMediaProjection(metrics)
+                }
 
             if (bitmap == null) {
                 Logger.e("Screenshot capture returned null", "Screenshot")

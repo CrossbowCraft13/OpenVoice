@@ -16,7 +16,7 @@ Ran with JDK 17 + Android SDK 35 + NDK 25.2.9519653 + CMake 3.22.1 on Windows:
 | `./gradlew assembleDebug` (incl. C++ JNI) | ✅ BUILD SUCCESSFUL — `app-debug.apk` (97 MB) |
 | `./gradlew testDebugUnitTest` | ✅ 8/8 tests passed, 0 failures |
 | `./gradlew lint` | ✅ 0 errors, 41 warnings |
-| `./gradlew connectedDebugAndroidTest` | ✅ **418/418 instrumented tests passed**, 0 failures, 0 errors |
+| `./gradlew connectedDebugAndroidTest` | ✅ **437/437 instrumented tests passed**, 0 failures, 0 errors |
 
 Instrumented tests ran on an API 35 (Android 15) x86_64 emulator (WHPX-accelerated, headless).
 The first run exposed 27 failures — 18 were genuine bugs now fixed (see below); the rest were
@@ -55,12 +55,13 @@ excluded from the metric. Measured against the 80% roadmap gate:
 | Suite | INSTRUCTION | LINE | BRANCH |
 |-------|------------:|-----:|-------:|
 | Unit tests (49) | 7.92% | 8.59% | 4.55% |
-| Instrumented tests (418, API 35 emulator) | 61.42% | 64.42% | 41.00% |
-| **Merged (unit + instrumented)** | **65.56%** | **68.86%** | **44.67%** |
+| Instrumented tests (437, API 35 emulator) | 63.81% | 66.94% | 42.87% |
+| **Merged (unit + instrumented)** | **67.94%** | **71.37%** | **46.53%** |
 
-**Roadmap gate: 80% line coverage — now at 68.6%, an ~11-point gap** (was 53.9% after pass 2,
-46.4% after pass 1, and 41.2% on the first measurement). Three coverage attacks (37 unit +
-62 + 98 instrumented tests) moved eleven previously-zero packages off the floor:
+**Roadmap gate: 80% line coverage — now at 71.4%, an ~8.6-point gap** (was 68.6% after pass 3,
+53.9% after pass 2, 46.4% after pass 1, and 41.2% on the first measurement). Three coverage
+attacks (37 unit + 62 + 98 instrumented tests) moved eleven previously-zero packages off the
+floor:
 
 | Package | Before | After |
 |---------|-------:|------:|
@@ -142,12 +143,30 @@ returned corrupted `Memory` objects (empty values, wrong TTL/importance/pin stat
 previous tests never constructed `MemoryEngine`, so the memory subsystem's core read path had
 never actually been executed before.
 
-Remaining gaps are now dominated by model/native-dependent paths that cannot run on a stock
-emulator: LlamaCppBridge native branches, `InferenceEngine.chat/chatStream` success paths,
-`ModelManager.downloadModel` streaming, `PerceptionEngine` vision + a11y-attached paths,
-`ScreenshotPipeline.captureFullScreen` success (needs MediaProjection consent), the biometric
-prompt, and a few small KnowledgeGraph helpers. Closing the last ~11 points to the 80% gate
-would require either a real model on-device or injectable fakes for the platform services.
+### Pass 3d — seams for the unreachable paths (2026-08-07)
+
+Drove the platform/model-dependent paths with three small test seams (418 → 437 tests, all
+passing): `ScreenshotPipeline.captureOverride` (fake capture bitmap), and
+`VisionRuntime.fallbackResult` / `confidenceOverride` (fake vision output). This unlocked the
+full capture → OCR pipeline, the vision fusion path, `answerQuestion`'s vision tier, and the
+`downloadModel` streaming loop (tested against a real loopback HTTP server — debug builds only,
+via `app/src/debug` network security config permitting cleartext to 127.0.0.1).
+
+| Measure | Before | After |
+|---------|-------:|------:|
+| Merged line coverage | 68.9% | **71.4%** |
+| `perception` package | 68.2% | **82.4%** |
+| `perception/vision` | 45.3% | **74.4%** |
+| `ai` package | 76.5% | **81.9%** |
+| `memory` package | 88.4% | **90.0%** |
+
+Remaining gaps are now almost entirely native/attached-service paths a stock emulator cannot
+reach: LlamaCppBridge native branches (the biggest single block — the JNI library is only built
+for arm64/armv7 and never loads on x86_64), `InferenceEngine` completion success paths,
+`VoiceAccessibilityService` (41% — cannot be attached in an instrumented test), the vision
+model's real-inference branch, and the SDK<34 MediaProjection capture fallback. The remaining
+~8.6 points to the 80% gate would need either real models on-device or an injectable inference
+backend interface.
 
 ---
 
