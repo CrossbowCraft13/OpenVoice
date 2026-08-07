@@ -2,8 +2,8 @@
 
 ## Project: OpenVoice — Private, Local-First Android Voice Assistant
 
-**Date:** 2026-07-28 (verified 2026-08-06)
-**Build:** 48 Kotlin sources (8,284 lines) · 2 C++ JNI (308 lines) · 5 test suites (2,187 lines) · 61 source files
+**Date:** 2026-07-28 (verified 2026-08-06, coverage re-verified 2026-08-07)
+**Build:** 48 Kotlin sources · 2 C++ JNI (308 lines) · 8 test suites · 61+ source files
 
 **Status:** Phases 1–5 complete. All components implemented and audited.
 
@@ -16,7 +16,7 @@ Ran with JDK 17 + Android SDK 35 + NDK 25.2.9519653 + CMake 3.22.1 on Windows:
 | `./gradlew assembleDebug` (incl. C++ JNI) | ✅ BUILD SUCCESSFUL — `app-debug.apk` (97 MB) |
 | `./gradlew testDebugUnitTest` | ✅ 8/8 tests passed, 0 failures |
 | `./gradlew lint` | ✅ 0 errors, 41 warnings |
-| `./gradlew connectedDebugAndroidTest` | ✅ **255/255 instrumented tests passed**, 0 failures, 0 errors |
+| `./gradlew connectedDebugAndroidTest` | ✅ **418/418 instrumented tests passed**, 0 failures, 0 errors |
 
 Instrumented tests ran on an API 35 (Android 15) x86_64 emulator (WHPX-accelerated, headless).
 The first run exposed 27 failures — 18 were genuine bugs now fixed (see below); the rest were
@@ -55,12 +55,12 @@ excluded from the metric. Measured against the 80% roadmap gate:
 | Suite | INSTRUCTION | LINE | BRANCH |
 |-------|------------:|-----:|-------:|
 | Unit tests (49) | 7.92% | 8.59% | 4.55% |
-| Instrumented tests (320, API 35 emulator) | 48.09% | 49.42% | 30.89% |
-| **Merged (unit + instrumented)** | **52.24%** | **53.87%** | **34.57%** |
+| Instrumented tests (418, API 35 emulator) | 61.42% | 64.42% | 41.00% |
+| **Merged (unit + instrumented)** | **65.56%** | **68.86%** | **44.67%** |
 
-**Roadmap gate: 80% line coverage — now at 53.9%, a ~26-point gap** (was 46.4% / ~34-point
-gap after pass 1, and 41.2% / ~39-point gap on the first measurement). Two coverage attacks
-(37 unit + 62 instrumented tests) moved eleven previously-zero packages off the floor:
+**Roadmap gate: 80% line coverage — now at 68.6%, an ~11-point gap** (was 53.9% after pass 2,
+46.4% after pass 1, and 41.2% on the first measurement). Three coverage attacks (37 unit +
+62 + 98 instrumented tests) moved eleven previously-zero packages off the floor:
 
 | Package | Before | After |
 |---------|-------:|------:|
@@ -109,10 +109,45 @@ The suite caught two more production defects:
   even when the gesture failed — they now branch like `tapText`/`typeText`/`scroll` and
   return structured `ActionResult.fail` with reasons.
 
-Still-zero areas: `perception/vision` (1.7%, needs an actual multimodal model) and the root
-package (13 instr). The next highest-leverage targets are memory (33.6%), ai (33.9%), and
-perception (35.2%) — all driven by instrumented tests on-device. See the JaCoCo HTML reports
-under `app/build/reports/jacoco/` for per-class breakdowns.
+Still-zero areas: `perception/vision` (needs an actual multimodal model) and the root package
+(13 instr). The next highest-leverage targets were memory (33.6%), ai (33.9%), and perception
+(35.2%) — all driven by instrumented tests on-device. See the JaCoCo HTML reports under
+`app/build/reports/jacoco/` for per-class breakdowns.
+
+### Pass 3 — memory, ai, perception board (2026-08-07)
+
+The third attack cleared the remaining board in one pass (320 → 418 instrumented tests, all
+passing on the API 35 emulator) with three new test files:
+
+- `MemoryCoverageTest.kt` — MemoryEngine CRUD against the real SQLite DB (store/retrieve/
+  update/delete/search/pin/export/import/stats), VectorStore index logic, MemoryLifecycle
+- `AiCoverageTest.kt` — LlamaCppBridge guard branches, InferenceEngine lifecycle guards,
+  ModelManager file/metadata/activation/delete/download paths, BenchmarkRunner
+- `PerceptionCoverageTest.kt` — PerceptionEngine.perceive() cache/OCR-fusion paths,
+  ScreenshotPipeline fallbacks, VisionRuntime fallback behavior
+
+A `VectorStore.indexWithEmbedding` internal seam was added (mirroring the AccessibilityGateway
+approach) so the normalize/dedupe/optimize logic can be tested without a loaded embedding model.
+
+| Package | Before | After |
+|---------|-------:|------:|
+| `memory` | 37.6% | **88.4%** |
+| `ai` | 39.2% | **76.5%** |
+| `perception` | 35.4% | **68.2%** |
+
+**Production bug found and fixed:** the first end-to-end CRUD test exposed `cursorToMemory`
+reading every column after `key` one position too far right — `value` was read from the
+`summary` column, `pinned` from the `encrypted` flag, etc. Every memory read through the DB
+returned corrupted `Memory` objects (empty values, wrong TTL/importance/pin state). The
+previous tests never constructed `MemoryEngine`, so the memory subsystem's core read path had
+never actually been executed before.
+
+Remaining gaps are now dominated by model/native-dependent paths that cannot run on a stock
+emulator: LlamaCppBridge native branches, `InferenceEngine.chat/chatStream` success paths,
+`ModelManager.downloadModel` streaming, `PerceptionEngine` vision + a11y-attached paths,
+`ScreenshotPipeline.captureFullScreen` success (needs MediaProjection consent), the biometric
+prompt, and a few small KnowledgeGraph helpers. Closing the last ~11 points to the 80% gate
+would require either a real model on-device or injectable fakes for the platform services.
 
 ---
 

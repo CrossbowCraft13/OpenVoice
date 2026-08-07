@@ -68,49 +68,68 @@ class VectorStore @Inject constructor(
      */
     suspend fun index(memory: Memory): Boolean = withContext(Dispatchers.IO) {
         if (!initialized || !engine.isReady) return@withContext false
-
         try {
             val embedding = if (memory.embedding != null) {
                 memory.embedding
             } else {
                 engine.embed(memory.key + " " + memory.value)
             }
-
-            if (embedding == null || embedding.isEmpty()) {
-                Logger.w("VectorStore: empty embedding for ${memory.key}", "Memory")
-                return@withContext false
-            }
-
-            // Normalize
-            val normalized = normalize(embedding)
-
-            // Check for duplicates (within 0.05 cosine distance)
-            val duplicate = findDuplicate(normalized)
-            if (duplicate != null) {
-                // Update existing entry instead of duplicating
-                val idx = index.indexOfFirst { it.memoryId == duplicate.memoryId }
-                if (idx >= 0) {
-                    index[idx] = index[idx].copy(importance = memory.importance)
-                }
-                Logger.d("VectorStore: duplicate skipped for ${memory.key}", "Memory")
-                return@withContext true
-            }
-
-            index.add(IndexEntry(
-                memoryId = memory.id,
-                embedding = normalized,
-                text = memory.key + " " + memory.value + " " + memory.summary,
-                category = memory.category,
-                createdAt = memory.createdAt,
-                importance = memory.importance
-            ))
-
-            Logger.d("VectorStore: indexed ${memory.key} (${index.size} total)", "Memory")
-            true
+            doIndex(memory, embedding)
         } catch (e: Exception) {
             Logger.e("VectorStore index error: ${e.message}", "Memory")
             false
         }
+    }
+
+    /**
+     * Index a memory with a caller-provided embedding, bypassing the inference
+     * engine. Exposed as a test seam so the index/duplicate/optimize logic can
+     * be exercised without a loaded embedding model.
+     */
+    internal suspend fun indexWithEmbedding(memory: Memory, embedding: FloatArray): Boolean =
+        withContext(Dispatchers.IO) {
+            if (!initialized) return@withContext false
+            try {
+                doIndex(memory, embedding)
+            } catch (e: Exception) {
+                Logger.e("VectorStore index error: ${e.message}", "Memory")
+                false
+            }
+        }
+
+    /** Shared core of the indexing pipeline: normalize, dedupe, insert. */
+    private fun doIndex(memory: Memory, embedding: FloatArray?): Boolean {
+        if (embedding == null || embedding.isEmpty()) {
+            Logger.w("VectorStore: empty embedding for ${memory.key}", "Memory")
+            return false
+        }
+
+        // Normalize
+        val normalized = normalize(embedding)
+
+        // Check for duplicates (within 0.05 cosine distance)
+        val duplicate = findDuplicate(normalized)
+        if (duplicate != null) {
+            // Update existing entry instead of duplicating
+            val idx = index.indexOfFirst { it.memoryId == duplicate.memoryId }
+            if (idx >= 0) {
+                index[idx] = index[idx].copy(importance = memory.importance)
+            }
+            Logger.d("VectorStore: duplicate skipped for ${memory.key}", "Memory")
+            return true
+        }
+
+        index.add(IndexEntry(
+            memoryId = memory.id,
+            embedding = normalized,
+            text = memory.key + " " + memory.value + " " + memory.summary,
+            category = memory.category,
+            createdAt = memory.createdAt,
+            importance = memory.importance
+        ))
+
+        Logger.d("VectorStore: indexed ${memory.key} (${index.size} total)", "Memory")
+        return true
     }
 
     /**

@@ -493,29 +493,35 @@ class MemoryEngine @Inject constructor(
     }
 
     private fun cursorToMemory(cursor: android.database.Cursor): Memory {
-        val encrypted = cursor.getInt(14) == 1
-        var value = cursor.getString(9)
+        // Resolve columns by name (not position): a positional bug here previously
+        // read every column after `key` one slot too far right (value came back as
+        // summary, pinned as the encrypted flag, etc.). Callers wrap reads in
+        // try/catch, so a missing column fails safe (null/empty) instead of
+        // silently corrupting every memory.
+        fun col(name: String) = cursor.getColumnIndexOrThrow(name)
+        val encrypted = cursor.getInt(col("encrypted")) == 1
+        var value = cursor.getString(col("value"))
         if (encrypted) {
             val decrypted = encryption.decryptString(value)
             if (decrypted != null) value = decrypted
         }
 
         return Memory(
-            id = cursor.getString(0),
-            createdAt = cursor.getLong(1),
-            updatedAt = cursor.getLong(2),
-            accessedAt = cursor.getLong(3),
-            source = cursor.getString(4),
-            confidence = cursor.getFloat(5),
-            category = try { MemoryCategory.valueOf(cursor.getString(6)) }
+            id = cursor.getString(col("id")),
+            createdAt = cursor.getLong(col("created_at")),
+            updatedAt = cursor.getLong(col("updated_at")),
+            accessedAt = cursor.getLong(col("accessed_at")),
+            source = cursor.getString(col("source")),
+            confidence = cursor.getFloat(col("confidence")),
+            category = try { MemoryCategory.valueOf(cursor.getString(col("category"))) }
             catch (_: Exception) { MemoryCategory.LEARNED_FACT },
-            key = cursor.getString(7),
+            key = cursor.getString(col("key")),
             value = value,
-            summary = cursor.getString(10),
-            ttlDays = cursor.getInt(11),
-            importance = cursor.getFloat(12),
-            accessCount = cursor.getInt(13),
-            pinned = cursor.getInt(14) == 1,
+            summary = cursor.getString(col("summary")),
+            ttlDays = cursor.getInt(col("ttl_days")),
+            importance = cursor.getFloat(col("importance")),
+            accessCount = cursor.getInt(col("access_count")),
+            pinned = cursor.getInt(col("pinned")) == 1,
             encrypted = encrypted
         )
     }
