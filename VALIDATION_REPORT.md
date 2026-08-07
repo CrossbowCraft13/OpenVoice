@@ -45,6 +45,28 @@ commit failed with Kotlin compile errors (including a raw-string parse error tha
 entire module and surfaced as `Could not load module <Error module>`). All compile errors, the
 unit-test deadlock, and lint errors were fixed; see the git diff for details.
 
+## Test Coverage (JaCoCo) — 2026-08-07
+
+JaCoCo coverage reporting was added (`enableUnitTestCoverage`/`enableAndroidTestCoverage` on
+the debug build type + `jacocoUnitTestReport`, `jacocoAndroidTestReport`, `jacocoFullReport`
+tasks in `app/build.gradle.kts`). Generated code (Hilt/Dagger/Room, `R`, `BuildConfig`) is
+excluded from the metric. Measured against the 80% roadmap gate:
+
+| Suite | INSTRUCTION | LINE | BRANCH |
+|-------|------------:|-----:|-------:|
+| Unit tests (8) | 2.07% | 2.52% | 1.34% |
+| Instrumented tests (255, API 35 emulator) | 37.68% | 38.71% | 20.13% |
+| **Merged (unit + instrumented)** | **39.75%** | **41.23%** | **21.47%** |
+
+**Roadmap gate: 80% line coverage — currently at 41.2%, a ~39-point gap.** The instrumented
+suite is the workhorse (covers ~19× more instructions than unit tests). Zero-coverage areas are
+entirely untested by either suite: `audio`, `pipeline`, `stt`, `tts`, `vad`, `wakeword`, `ui`,
+`service`, and `di`. Best-covered: `intent` (96.6%), `plugin` (92.3%), `onboarding` (87.2%),
+`developer` (80.1%). To close the gap the highest-leverage additions are unit tests for the
+voice pipeline classes (`stt`/`tts`/`vad`/`wakeword`/`pipeline`) and instrumented tests for
+`ui`/`service` — see the JaCoCo HTML reports under `app/build/reports/jacoco/` for per-class
+breakdowns.
+
 ---
 
 ## Architecture Overview
