@@ -16,7 +16,7 @@ Ran with JDK 17 + Android SDK 35 + NDK 25.2.9519653 + CMake 3.22.1 on Windows:
 | `./gradlew assembleDebug` (incl. C++ JNI) | ✅ BUILD SUCCESSFUL — `app-debug.apk` (97 MB) |
 | `./gradlew testDebugUnitTest` | ✅ 8/8 tests passed, 0 failures |
 | `./gradlew lint` | ✅ 0 errors, 41 warnings |
-| `./gradlew connectedDebugAndroidTest` | ✅ **437/437 instrumented tests passed**, 0 failures, 0 errors |
+| `./gradlew connectedDebugAndroidTest` | ✅ **457/457 instrumented tests passed**, 0 failures, 0 errors |
 
 Instrumented tests ran on an API 35 (Android 15) x86_64 emulator (WHPX-accelerated, headless).
 The first run exposed 27 failures — 18 were genuine bugs now fixed (see below); the rest were
@@ -55,13 +55,13 @@ excluded from the metric. Measured against the 80% roadmap gate:
 | Suite | INSTRUCTION | LINE | BRANCH |
 |-------|------------:|-----:|-------:|
 | Unit tests (49) | 7.92% | 8.59% | 4.55% |
-| Instrumented tests (437, API 35 emulator) | 63.81% | 66.94% | 42.87% |
-| **Merged (unit + instrumented)** | **67.94%** | **71.37%** | **46.53%** |
+| Instrumented tests (457, API 35 emulator) | 64.38% | 67.42% | 43.57% |
+| **Merged (unit + instrumented)** | **68.51%** | **71.85%** | **47.23%** |
 
-**Roadmap gate: 80% line coverage — now at 71.4%, an ~8.6-point gap** (was 68.6% after pass 3,
-53.9% after pass 2, 46.4% after pass 1, and 41.2% on the first measurement). Three coverage
-attacks (37 unit + 62 + 98 instrumented tests) moved eleven previously-zero packages off the
-floor:
+**Roadmap gate: 80% line coverage — now at 71.9%, an ~8.2-point gap** (was 71.4% after pass 3d,
+68.6% after pass 3, 53.9% after pass 2, 46.4% after pass 1, and 41.2% on the first
+measurement). Four coverage attacks (37 unit + 62 + 98 + 19 instrumented tests) moved eleven
+previously-zero packages off the floor:
 
 | Package | Before | After |
 |---------|-------:|------:|
@@ -162,11 +162,33 @@ via `app/src/debug` network security config permitting cleartext to 127.0.0.1).
 
 Remaining gaps are now almost entirely native/attached-service paths a stock emulator cannot
 reach: LlamaCppBridge native branches (the biggest single block — the JNI library is only built
-for arm64/armv7 and never loads on x86_64), `InferenceEngine` completion success paths,
-`VoiceAccessibilityService` (41% — cannot be attached in an instrumented test), the vision
-model's real-inference branch, and the SDK<34 MediaProjection capture fallback. The remaining
-~8.6 points to the 80% gate would need either real models on-device or an injectable inference
-backend interface.
+for arm64/armv7 and never loads on x86_64), `VoiceAccessibilityService` (41% — cannot be
+attached in an instrumented test), the vision model's real-inference branch, and the SDK<34
+MediaProjection capture fallback. The remaining ~8 points to the 80% gate would need real models
+on-device; the `InferenceEngine` completion-success gap was closed by Pass 4's injectable
+backend (below).
+
+### Pass 4 — injectable inference backend (2026-08-07)
+
+Extracted an `InferenceBackend` interface from the `LlamaCppBridge` object and made
+`InferenceEngine` depend on it (defaulting to `LlamaCppBridge` for direct-construction call
+sites; the DI graph provides it explicitly via `AiModule.provideInferenceBackend`). This
+decouples the engine from the arm64-only native library, so its full lifecycle — load success,
+sync/streaming chat, chat-prompt formatting, battery-saver config application, embedding,
+unload, cancel, metadata, token estimation — can now be exercised on any device (437 → 457
+tests, all passing on the API 35 emulator) through a scripted `FakeBackend`
+(`InferenceBackendTest.kt`). Alternative backends (ONNX, ML Kit, remote) can now be swapped in
+without touching any caller.
+
+| Measure | Before | After |
+|---------|-------:|------:|
+| Merged line coverage | 71.4% | **71.9%** |
+| `ai` package | 81.9% | **86.3%** |
+| `LlamaCppBridge` (per-class) | 8.6% | **27.2%** |
+
+`LlamaCppBridge`'s remaining 73% is the native-call bodies and `nativeLoaded=false` guards that
+the JNI library can never exercise on x86_64 — they only run on an arm64 device with the
+llama.cpp library actually linked.
 
 ---
 

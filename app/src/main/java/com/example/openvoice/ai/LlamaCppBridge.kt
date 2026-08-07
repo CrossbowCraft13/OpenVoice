@@ -16,7 +16,7 @@ import java.io.File
  * Thread safety: All native calls are synchronized on the native context pointer.
  * Streaming callbacks run on the caller's thread.
  */
-object LlamaCppBridge {
+object LlamaCppBridge : InferenceBackend {
 
     private var nativeLoaded = false
     private var modelPtr: Long = 0
@@ -49,13 +49,13 @@ object LlamaCppBridge {
     private external fun nativeTokenCount(ctx: Long, text: String): Int
 
     fun isAvailable() = nativeLoaded
-    fun isLoaded() = modelPtr != 0L
-    fun isProcessing() = isRunning
+    override fun isLoaded() = modelPtr != 0L
+    override fun isProcessing() = isRunning
 
     /**
      * Load a GGUF model file.
      */
-    fun loadModel(modelFile: File, config: AiConfig): Boolean {
+    override fun loadModel(modelFile: File, config: AiConfig): Boolean {
         if (!nativeLoaded) {
             Logger.e("Cannot load model: native library not loaded", "AI")
             return false
@@ -88,7 +88,7 @@ object LlamaCppBridge {
     /**
      * Synchronous prompt completion. Returns the generated text.
      */
-    fun complete(prompt: String, config: AiConfig): String {
+    override fun complete(prompt: String, config: AiConfig): String {
         if (modelPtr == 0L || !nativeLoaded) return ""
         isRunning = true
         return try {
@@ -107,7 +107,7 @@ object LlamaCppBridge {
      * Streaming completion. Calls onToken for each generated token.
      * Returns the full generated text.
      */
-    fun completeStream(prompt: String, config: AiConfig, onToken: (String) -> Unit): String {
+    override fun completeStream(prompt: String, config: AiConfig, onToken: (String) -> Unit): String {
         if (modelPtr == 0L || !nativeLoaded) return ""
         isRunning = true
         val sb = StringBuilder()
@@ -128,7 +128,7 @@ object LlamaCppBridge {
     /**
      * Generate an embedding vector for the given text.
      */
-    fun embed(text: String): FloatArray? {
+    override fun embed(text: String): FloatArray? {
         if (modelPtr == 0L || !nativeLoaded) return null
         return try { nativeEmbed(modelPtr, text) }
         catch (e: Exception) { Logger.e("Embedding failed: ${e.message}", "AI"); null }
@@ -137,7 +137,7 @@ object LlamaCppBridge {
     /**
      * Cancel an in-progress generation.
      */
-    fun cancel() {
+    override fun cancel() {
         if (modelPtr != 0L && nativeLoaded) {
             nativeCancel(modelPtr)
             isRunning = false
@@ -147,7 +147,7 @@ object LlamaCppBridge {
     /**
      * Get model metadata as key-value pairs.
      */
-    fun getMetadata(): Map<String, String> {
+    override fun getMetadata(): Map<String, String> {
         if (modelPtr == 0L || !nativeLoaded) return emptyMap()
         return try {
             nativeMetadata(modelPtr).map {
@@ -160,7 +160,7 @@ object LlamaCppBridge {
     /**
      * Estimate token count for a text string.
      */
-    fun estimateTokenCount(text: String): Int {
+    override fun estimateTokenCount(text: String): Int {
         if (modelPtr == 0L || !nativeLoaded) return text.length / 4 // Fallback
         return try { nativeTokenCount(modelPtr, text) } catch (_: Exception) { text.length / 4 }
     }
@@ -168,14 +168,14 @@ object LlamaCppBridge {
     /**
      * Reset the context window (clear KV cache).
      */
-    fun resetContext() {
+    override fun resetContext() {
         if (modelPtr != 0L && nativeLoaded) nativeResetContext(modelPtr)
     }
 
     /**
      * Release the model and free all resources.
      */
-    fun release() {
+    override fun release() {
         cancel()
         if (modelPtr != 0L && nativeLoaded) {
             nativeRelease(modelPtr)

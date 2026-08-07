@@ -3,7 +3,9 @@ package com.example.openvoice.di
 import android.content.Context
 import com.example.openvoice.ai.AiSettings
 import com.example.openvoice.ai.DeviceProfiler
+import com.example.openvoice.ai.InferenceBackend
 import com.example.openvoice.ai.InferenceEngine
+import com.example.openvoice.ai.LlamaCppBridge
 import com.example.openvoice.ai.ModelManager
 import com.example.openvoice.developer.DeveloperConsole
 import dagger.Module
@@ -24,11 +26,15 @@ object AiModule {
     fun provideAiSettings(@ApplicationContext ctx: Context) = AiSettings(ctx)
 
     @Provides @Singleton
+    fun provideInferenceBackend(): InferenceBackend = LlamaCppBridge
+
+    @Provides @Singleton
     fun provideInferenceEngine(
         @ApplicationContext ctx: Context,
         settings: AiSettings,
-        profiler: DeviceProfiler
-    ) = InferenceEngine(ctx, settings, profiler)
+        profiler: DeviceProfiler,
+        backend: InferenceBackend
+    ) = InferenceEngine(ctx, settings, profiler, backend)
 
     @Provides @Singleton
     fun provideModelManager(

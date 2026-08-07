@@ -41,16 +41,19 @@ data class ChatMessage(
 class InferenceEngine @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settings: AiSettings,
-    private val profiler: DeviceProfiler
+    private val profiler: DeviceProfiler,
+    // Default keeps direct-construction call sites (tests, benchmarks) working
+    // unchanged; the DI graph always supplies this explicitly.
+    private val backend: InferenceBackend = LlamaCppBridge
 ) {
 
     private var lastLoadAttempt = 0L
 
     /** Whether a model is currently loaded and ready. */
-    val isReady: Boolean get() = LlamaCppBridge.isLoaded()
+    val isReady: Boolean get() = backend.isLoaded()
 
     /** Whether inference is currently running. */
-    val isProcessing: Boolean get() = LlamaCppBridge.isProcessing()
+    val isProcessing: Boolean get() = backend.isProcessing()
 
     // ── Model Lifecycle ─────────────────────────────────────────────────
 
@@ -69,14 +72,14 @@ class InferenceEngine @Inject constructor(
             return@withContext false
         }
         lastLoadAttempt = System.currentTimeMillis()
-        LlamaCppBridge.loadModel(modelFile, config)
+        backend.loadModel(modelFile, config)
     }
 
     /**
      * Unload the current model and free resources.
      */
     fun unloadModel() {
-        LlamaCppBridge.release()
+        backend.release()
     }
 
     // ── Completion ──────────────────────────────────────────────────────
@@ -87,7 +90,7 @@ class InferenceEngine @Inject constructor(
     suspend fun complete(prompt: String): String = withContext(Dispatchers.IO) {
         if (!isReady) { Logger.w("Engine not ready", "AI"); return@withContext "" }
         val config = settings.applyBatterySaver(settings.load())
-        LlamaCppBridge.complete(prompt, config)
+        backend.complete(prompt, config)
     }
 
     /**
@@ -97,7 +100,7 @@ class InferenceEngine @Inject constructor(
         if (!isReady) return@withContext InferenceResult.ModelNotLoaded
         val config = settings.load()
         val prompt = buildChatPrompt(messages, config.modelName)
-        val text = LlamaCppBridge.complete(prompt, config)
+        val text = backend.complete(prompt, config)
         if (text.isEmpty()) InferenceResult.Error("Empty response")
         else InferenceResult.Success(text)
     }
@@ -112,7 +115,7 @@ class InferenceEngine @Inject constructor(
         if (!isReady) return@withContext InferenceResult.ModelNotLoaded
         val config = settings.applyBatterySaver(settings.load())
         val prompt = buildChatPrompt(messages, config.modelName)
-        val full = LlamaCppBridge.completeStream(prompt, config, onToken)
+        val full = backend.completeStream(prompt, config, onToken)
         if (full.isEmpty() && isReady) InferenceResult.Error("Empty response")
         else InferenceResult.Success(full)
     }
@@ -137,7 +140,7 @@ class InferenceEngine @Inject constructor(
      */
     suspend fun embed(text: String): FloatArray? = withContext(Dispatchers.IO) {
         if (!isReady) { Logger.w("Engine not ready for embedding", "AI"); return@withContext null }
-        LlamaCppBridge.embed(text)
+        backend.embed(text)
     }
 
     // ── Context ─────────────────────────────────────────────────────────
@@ -146,14 +149,14 @@ class InferenceEngine @Inject constructor(
      * Reset the model's context window (clears KV cache).
      */
     fun resetContext() {
-        LlamaCppBridge.resetContext()
+        backend.resetContext()
     }
 
     /**
      * Estimate token count for a text string.
      */
     fun estimateTokens(text: String): Int =
-        LlamaCppBridge.estimateTokenCount(text)
+        backend.estimateTokenCount(text)
 
     // ── Control ─────────────────────────────────────────────────────────
 
@@ -161,14 +164,14 @@ class InferenceEngine @Inject constructor(
      * Cancel any in-progress generation.
      */
     fun cancel() {
-        LlamaCppBridge.cancel()
+        backend.cancel()
     }
 
     /**
      * Get model metadata.
      */
     fun getModelMetadata(): Map<String, String> =
-        LlamaCppBridge.getMetadata()
+        backend.getMetadata()
 
     /**
      * Load a model by file path directly (bypass settings).
@@ -178,7 +181,7 @@ class InferenceEngine @Inject constructor(
         if (!file.exists()) return@withContext false
         lastLoadAttempt = System.currentTimeMillis()
         val config = settings.load()
-        LlamaCppBridge.loadModel(file, config.copy(activeModelPath = path))
+        backend.loadModel(file, config.copy(activeModelPath = path))
     }
 
     /**
