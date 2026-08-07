@@ -1,5 +1,6 @@
 package com.example.openvoice.accessibility.engine
 
+import com.example.openvoice.accessibility.AccessibilityGateway
 import com.example.openvoice.accessibility.VoiceAccessibilityService
 import com.example.openvoice.accessibility.SemanticUiNode
 import com.example.openvoice.accessibility.ScreenState
@@ -27,7 +28,7 @@ import kotlinx.coroutines.launch
  *   a11y.workflow.execute(workflowSteps)
  */
 class AccessibilityIntelligence(
-    private val a11y: VoiceAccessibilityService,
+    private val a11y: AccessibilityGateway,
     private val blackboard: TaskBlackboard
 ) {
     val screenManager: ScreenStateManager

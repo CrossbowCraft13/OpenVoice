@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  *   The assistant calls executeActions() with a list of commands.
  *   Each command is a single action like "tap Submit" or "scroll down".
  */
-class VoiceAccessibilityService : AccessibilityService() {
+class VoiceAccessibilityService : AccessibilityService(), AccessibilityGateway {
 
     companion object {
         @Volatile private var instance: VoiceAccessibilityService? = null
@@ -184,7 +184,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     // ── Semantic UI Tree ───────────────────────────────────────────────────────
 
     /** Parse the current screen into a semantic UiNode tree. */
-    fun getUiTree(): UiNode? {
+    override fun getUiTree(): UiNode? {
         val root = activeRoot() ?: return null
         return try { parseNode(root, 0) } finally { root.recycle() }
     }
@@ -241,7 +241,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     }
 
     /** Tap at screen coordinates. Returns after gesture completes or timeout. */
-    suspend fun tap(x: Int, y: Int): Boolean = suspendCancellableCoroutine { cont ->
+    override suspend fun tap(x: Int, y: Int): Boolean = suspendCancellableCoroutine { cont ->
         val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
         val callback = object : AccessibilityService.GestureResultCallback() {
             override fun onCompleted(gesture: GestureDescription?) { cont.resume(true) { } }
@@ -257,7 +257,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     }
 
     /** Find node by text and tap it. */
-    suspend fun tapText(text: String): Boolean {
+    override suspend fun tapText(text: String): Boolean {
         // Try clickable first, then any visible
         val node = findClickableByText(text) ?: findNodeByText(text) ?: return false
         return try {
@@ -267,7 +267,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     }
 
     /** Long press at coordinates. */
-    suspend fun longPress(x: Int, y: Int): Boolean = suspendCancellableCoroutine { cont ->
+    override suspend fun longPress(x: Int, y: Int): Boolean = suspendCancellableCoroutine { cont ->
         val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
         val callback = object : AccessibilityService.GestureResultCallback() {
             override fun onCompleted(gesture: GestureDescription?) { cont.resume(true) { } }
@@ -277,7 +277,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     }
 
     /** Swipe from (x1,y1) to (x2,y2). */
-    suspend fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Long = 300): Boolean =
+    override suspend fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Long): Boolean =
         suspendCancellableCoroutine { cont ->
             val path = Path().apply {
                 moveTo(x1.toFloat(), y1.toFloat())
@@ -291,7 +291,7 @@ class VoiceAccessibilityService : AccessibilityService() {
         }
 
     /** Scroll in a direction. Returns true if gesture was dispatched. */
-    suspend fun scroll(direction: String): Boolean {
+    override suspend fun scroll(direction: String): Boolean {
         val scrollable = findScrollable() ?: return false
         return try {
             val r = Rect().also { scrollable.getBoundsInScreen(it) }
@@ -305,12 +305,12 @@ class VoiceAccessibilityService : AccessibilityService() {
                 "right" -> listOf(cx - offset, cy, cx + offset, cy)
                 else -> return false
             }
-            swipe(x1, y1, x2, y2)
+            swipe(x1, y1, x2, y2, 300L)
         } finally { scrollable.recycle() }
     }
 
     /** Type text into the currently focused editable field. */
-    suspend fun type(text: String): Boolean {
+    override suspend fun type(text: String): Boolean {
         // Try finding the focused editable node
         val focused = try {
             activeRoot()?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
@@ -336,31 +336,31 @@ class VoiceAccessibilityService : AccessibilityService() {
 
     // ── Global Actions ─────────────────────────────────────────────────────────
 
-    suspend fun goBack(): Boolean {
+    override suspend fun goBack(): Boolean {
         performGlobalAction(GLOBAL_ACTION_BACK)
         delay(150)
         return true
     }
 
-    suspend fun goHome(): Boolean {
+    override suspend fun goHome(): Boolean {
         performGlobalAction(GLOBAL_ACTION_HOME)
         delay(150)
         return true
     }
 
-    suspend fun openRecents(): Boolean {
+    override suspend fun openRecents(): Boolean {
         performGlobalAction(GLOBAL_ACTION_RECENTS)
         delay(150)
         return true
     }
 
-    suspend fun openNotifications(): Boolean {
+    override suspend fun openNotifications(): Boolean {
         performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
         delay(300)
         return true
     }
 
-    suspend fun openQuickSettings(): Boolean {
+    override suspend fun openQuickSettings(): Boolean {
         performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS)
         delay(300)
         return true
@@ -369,7 +369,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     // ── Application Navigation ─────────────────────────────────────────────────
 
     /** Open an app by package name using the system launcher. */
-    suspend fun openApp(packageName: String): Boolean {
+    override suspend fun openApp(packageName: String): Boolean {
         return try {
             val intent = packageManager?.getLaunchIntentForPackage(packageName)
             if (intent != null) {
@@ -442,7 +442,8 @@ class VoiceAccessibilityService : AccessibilityService() {
                 val parts = lower.removePrefix("swipe ").trim().split(Regex("\\s+"))
                 if (parts.size >= 4) swipe(
                     parts[0].toIntOrNull() ?: 0, parts[1].toIntOrNull() ?: 0,
-                    parts[2].toIntOrNull() ?: 0, parts[3].toIntOrNull() ?: 0
+                    parts[2].toIntOrNull() ?: 0, parts[3].toIntOrNull() ?: 0,
+                    300L
                 ) else false
             }
             lower.startsWith("wait ") -> {
@@ -465,7 +466,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     // ── Window Info ────────────────────────────────────────────────────────────
 
     /** Get the current active package name, if available. */
-    fun getActivePackage(): String? {
+    override fun getActivePackage(): String? {
         return try { activeRoot()?.packageName?.toString() }
         catch (_: Exception) { null }
     }

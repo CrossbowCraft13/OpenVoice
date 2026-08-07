@@ -1,6 +1,6 @@
 package com.example.openvoice.accessibility.engine
 
-import com.example.openvoice.accessibility.VoiceAccessibilityService
+import com.example.openvoice.accessibility.AccessibilityGateway
 import com.example.openvoice.task.TaskBlackboard
 import com.example.openvoice.util.Logger
 import kotlinx.coroutines.delay
@@ -17,7 +17,7 @@ import kotlinx.coroutines.delay
  * - Timeout gracefully
  */
 class WorkflowEngine(
-    private val a11y: VoiceAccessibilityService,
+    private val a11y: AccessibilityGateway,
     private val actions: ActionEngine,
     private val screenManager: ScreenStateManager,
     private val blackboard: TaskBlackboard

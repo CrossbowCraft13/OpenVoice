@@ -54,13 +54,13 @@ excluded from the metric. Measured against the 80% roadmap gate:
 
 | Suite | INSTRUCTION | LINE | BRANCH |
 |-------|------------:|-----:|-------:|
-| Unit tests (49) | 7.96% | 8.61% | 4.58% |
-| Instrumented tests (258, API 35 emulator) | 40.30% | 41.98% | 21.87% |
-| **Merged (unit + instrumented)** | **44.46%** | **46.44%** | **25.57%** |
+| Unit tests (49) | 7.92% | 8.59% | 4.55% |
+| Instrumented tests (320, API 35 emulator) | 48.09% | 49.42% | 30.89% |
+| **Merged (unit + instrumented)** | **52.24%** | **53.87%** | **34.57%** |
 
-**Roadmap gate: 80% line coverage — now at 46.4%, a ~34-point gap** (was 41.2% / ~39-point
-gap on the first measurement). One coverage attack pass (37 new unit tests + 3 new instrumented
-tests) moved eight previously-zero packages off the floor:
+**Roadmap gate: 80% line coverage — now at 53.9%, a ~26-point gap** (was 46.4% / ~34-point
+gap after pass 1, and 41.2% / ~39-point gap on the first measurement). Two coverage attacks
+(37 unit + 62 instrumented tests) moved eleven previously-zero packages off the floor:
 
 | Package | Before | After |
 |---------|-------:|------:|
@@ -83,10 +83,36 @@ fixed a real production bug: the radix-2 FFT assumed a power-of-two window but `
 so it read past the array end (crashing the moment the wake-word model loaded and the buffer
 filled); it now zero-pads to the next power of two.
 
+### Pass 2 — Accessibility engine (2026-08-07)
+
+The second attack took the largest untested block — the accessibility engine (19.3%, ~4.8k
+instructions) — from 19.3% to **90.7% instruction / 94.8% line** with 62 new instrumented
+tests (258 → 320 total, all passing on the API 35 emulator):
+
+| Package | Before | After |
+|---------|-------:|------:|
+| `accessibility/engine` (UiSearchEngine, ActionEngine, ScreenStateManager, WorkflowEngine, AccessibilityIntelligence) | 19.3% | **90.7%** |
+| `accessibility` (VoiceAccessibilityService) | 41.1% | 41.1% |
+
+How: a slim 14-method `AccessibilityGateway` interface was extracted from
+`VoiceAccessibilityService` and injected into the four engines; tests drive the real engine
+logic through a scripted fake that returns failure/exception/alternate/verify outcomes. The
+service itself stays at 41% — it cannot be attached in an instrumented test, so its
+gesture-injection body remains covered only via the existing service-level tests.
+
+The suite caught two more production defects:
+- `ScreenStateManager.hasScreenChanged` compared the just-captured state against itself
+  (`captureScreen` overwrote `lastScreenState` before the comparison), so it could never
+  report a change — reordered to compare against the previous capture.
+- `ActionEngine` silently discarded the gateway's Boolean result in `tapCoordinates`,
+  `longPress`, `swipe`, `clearText`, and all five navigation ops, always reporting success
+  even when the gesture failed — they now branch like `tapText`/`typeText`/`scroll` and
+  return structured `ActionResult.fail` with reasons.
+
 Still-zero areas: `perception/vision` (1.7%, needs an actual multimodal model) and the root
-package (13 instr). The next highest-leverage targets are the accessibility engine (19.3%),
-memory (33.6%), ai (33.9%), and perception (35.2%) — all driven by instrumented tests on-
-device. See the JaCoCo HTML reports under `app/build/reports/jacoco/` for per-class breakdowns.
+package (13 instr). The next highest-leverage targets are memory (33.6%), ai (33.9%), and
+perception (35.2%) — all driven by instrumented tests on-device. See the JaCoCo HTML reports
+under `app/build/reports/jacoco/` for per-class breakdowns.
 
 ---
 

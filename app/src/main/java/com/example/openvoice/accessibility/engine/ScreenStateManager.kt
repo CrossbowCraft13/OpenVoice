@@ -1,6 +1,6 @@
 package com.example.openvoice.accessibility.engine
 
-import com.example.openvoice.accessibility.VoiceAccessibilityService
+import com.example.openvoice.accessibility.AccessibilityGateway
 import com.example.openvoice.accessibility.SemanticUiNode
 import com.example.openvoice.accessibility.ScreenState
 import com.example.openvoice.accessibility.UiRole
@@ -21,7 +21,7 @@ import kotlinx.coroutines.withContext
  * - Provide screen diffing (detect what changed)
  */
 class ScreenStateManager(
-    private val a11y: VoiceAccessibilityService,
+    private val a11y: AccessibilityGateway,
     private val blackboard: TaskBlackboard
 ) {
 
@@ -113,8 +113,11 @@ class ScreenStateManager(
 
     /** Check if the screen has changed since last capture. */
     suspend fun hasScreenChanged(): Boolean {
-        val current = captureScreen()
+        // Read the previous capture BEFORE capturing again — captureScreen()
+        // overwrites lastScreenState, so comparing afterwards would always
+        // see the screen as unchanged.
         val last = lastScreenState
+        val current = captureScreen()
         if (last == null) return true
         return current.packageName != last.packageName ||
             current.interactiveElements.size != last.interactiveElements.size

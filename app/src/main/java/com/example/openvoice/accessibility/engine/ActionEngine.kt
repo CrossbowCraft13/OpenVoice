@@ -1,6 +1,6 @@
 package com.example.openvoice.accessibility.engine
 
-import com.example.openvoice.accessibility.VoiceAccessibilityService
+import com.example.openvoice.accessibility.AccessibilityGateway
 import com.example.openvoice.accessibility.SemanticUiNode
 import com.example.openvoice.util.Logger
 import kotlinx.coroutines.delay
@@ -32,7 +32,7 @@ data class ActionResult(
  * - Logs the action
  * - Goes through the VoiceAccessibilityService
  */
-class ActionEngine(private val a11y: VoiceAccessibilityService) {
+class ActionEngine(private val a11y: AccessibilityGateway) {
 
     // ── Core Gestures ───────────────────────────────────────────────
 
@@ -54,8 +54,10 @@ class ActionEngine(private val a11y: VoiceAccessibilityService) {
     suspend fun tapCoordinates(x: Int, y: Int): ActionResult {
         val start = System.currentTimeMillis()
         return try {
-            a11y.tap(x, y)
-            ActionResult.ok("tap($x,$y)", System.currentTimeMillis() - start)
+            val success = a11y.tap(x, y)
+            val ms = System.currentTimeMillis() - start
+            if (success) ActionResult.ok("tap($x,$y)", ms)
+            else ActionResult.fail("tap($x,$y)", "Tap failed at ($x,$y)", timeMs = ms)
         } catch (e: Exception) {
             ActionResult.fail("tap($x,$y)", e.message ?: "Unknown")
         }
@@ -75,8 +77,10 @@ class ActionEngine(private val a11y: VoiceAccessibilityService) {
     suspend fun longPress(x: Int, y: Int): ActionResult {
         val start = System.currentTimeMillis()
         return try {
-            a11y.longPress(x, y)
-            ActionResult.ok("long_press($x,$y)", System.currentTimeMillis() - start)
+            val success = a11y.longPress(x, y)
+            val ms = System.currentTimeMillis() - start
+            if (success) ActionResult.ok("long_press($x,$y)", ms)
+            else ActionResult.fail("long_press($x,$y)", "Long press failed at ($x,$y)", timeMs = ms)
         } catch (e: Exception) {
             ActionResult.fail("long_press($x,$y)", e.message ?: "Unknown")
         }
@@ -102,8 +106,11 @@ class ActionEngine(private val a11y: VoiceAccessibilityService) {
     suspend fun clearText(): ActionResult {
         val start = System.currentTimeMillis()
         return try {
-            a11y.type("")
-            ActionResult.ok("clear_text", System.currentTimeMillis() - start)
+            val success = a11y.type("")
+            val ms = System.currentTimeMillis() - start
+            if (success) ActionResult.ok("clear_text", ms)
+            else ActionResult.fail("clear_text", "No editable field focused",
+                "Tap on a text field first", ms)
         } catch (e: Exception) {
             ActionResult.fail("clear_text", e.message ?: "Unknown")
         }
@@ -134,8 +141,10 @@ class ActionEngine(private val a11y: VoiceAccessibilityService) {
     suspend fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Long = 300): ActionResult {
         val start = System.currentTimeMillis()
         return try {
-            a11y.swipe(x1, y1, x2, y2, durationMs)
-            ActionResult.ok("swipe($x1,$y1→$x2,$y2)", System.currentTimeMillis() - start)
+            val success = a11y.swipe(x1, y1, x2, y2, durationMs)
+            val ms = System.currentTimeMillis() - start
+            if (success) ActionResult.ok("swipe($x1,$y1→$x2,$y2)", ms)
+            else ActionResult.fail("swipe", "Swipe failed", timeMs = ms)
         } catch (e: Exception) {
             ActionResult.fail("swipe", e.message ?: "Unknown")
         }
@@ -143,34 +152,40 @@ class ActionEngine(private val a11y: VoiceAccessibilityService) {
 
     // ── Navigation ──────────────────────────────────────────────────
 
+    private suspend fun navResult(action: String, executed: Boolean): ActionResult {
+        val ms = System.currentTimeMillis()
+        return if (executed) ActionResult.ok(action, ms)
+        else ActionResult.fail(action, "$action gesture failed", timeMs = ms)
+    }
+
     suspend fun goBack(): ActionResult {
         val start = System.currentTimeMillis()
-        a11y.goBack()
-        return ActionResult.ok("back", System.currentTimeMillis() - start)
+        val executed = a11y.goBack()
+        return navResult("back", executed).copy(executionTimeMs = System.currentTimeMillis() - start)
     }
 
     suspend fun goHome(): ActionResult {
         val start = System.currentTimeMillis()
-        a11y.goHome()
-        return ActionResult.ok("home", System.currentTimeMillis() - start)
+        val executed = a11y.goHome()
+        return navResult("home", executed).copy(executionTimeMs = System.currentTimeMillis() - start)
     }
 
     suspend fun openRecents(): ActionResult {
         val start = System.currentTimeMillis()
-        a11y.openRecents()
-        return ActionResult.ok("recents", System.currentTimeMillis() - start)
+        val executed = a11y.openRecents()
+        return navResult("recents", executed).copy(executionTimeMs = System.currentTimeMillis() - start)
     }
 
     suspend fun openNotifications(): ActionResult {
         val start = System.currentTimeMillis()
-        a11y.openNotifications()
-        return ActionResult.ok("notifications", System.currentTimeMillis() - start)
+        val executed = a11y.openNotifications()
+        return navResult("notifications", executed).copy(executionTimeMs = System.currentTimeMillis() - start)
     }
 
     suspend fun openQuickSettings(): ActionResult {
         val start = System.currentTimeMillis()
-        a11y.openQuickSettings()
-        return ActionResult.ok("quick_settings", System.currentTimeMillis() - start)
+        val executed = a11y.openQuickSettings()
+        return navResult("quick_settings", executed).copy(executionTimeMs = System.currentTimeMillis() - start)
     }
 
     // ── App Launch ──────────────────────────────────────────────────
