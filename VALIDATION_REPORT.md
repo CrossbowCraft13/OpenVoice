@@ -160,11 +160,12 @@ via `app/src/debug` network security config permitting cleartext to 127.0.0.1).
 | `ai` package | 76.5% | **81.9%** |
 | `memory` package | 88.4% | **90.0%** |
 
-Remaining gaps are now almost entirely native/attached-service paths a stock emulator cannot
-reach: LlamaCppBridge native branches (the biggest single block — the JNI library is only built
-for arm64/armv7 and never loads on x86_64), `VoiceAccessibilityService` (41% — cannot be
-attached in an instrumented test), the vision model's real-inference branch, and the SDK<34
-MediaProjection capture fallback. The remaining ~8 points to the 80% gate would need real models
+Remaining gaps are now almost entirely attached-service paths a stock emulator cannot reach:
+`VoiceAccessibilityService` (41% — cannot be attached in an instrumented test), the vision
+model's real-inference branch, and the SDK<34 MediaProjection capture fallback. The
+LlamaCppBridge native branches were the biggest single block — see Pass 5: debug builds now
+ship an x86_64 JNI lib, and real llama.cpp inference was executed on the emulator (the native
+branches run; JaCoCo simply cannot instrument C++). The remaining ~8 points to the 80% gate would need real models
 on-device; the `InferenceEngine` completion-success gap was closed by Pass 4's injectable
 backend (below).
 
@@ -213,9 +214,17 @@ cache and fail), the sampling seed from `nativeInit` is now used (was second-res
 `check-environment.sh` submodule check was fixed (`-e`, not `-d`, on the `.git` gitlink file).
 All three CI workflows (build, ci, release) now checkout with `submodules: recursive`.
 
-Remaining stubs: `whisper_jni.cpp` is still a placeholder (STT), and `LlamaCppBridge`'s native
-branches still only execute on arm64 devices with a GGUF model — neither is reachable from an
-x86_64 CI emulator, which is why the JaCoCo numbers above are unchanged.
+**Emulation verified (2026-08-07):** debug builds now also target `x86_64` (release stays
+arm-only), so the emulator loads the real `libllama_bridge.so`. `NativeSmokeTest`
+(`app/src/androidTest/.../NativeSmokeTest.kt`) drove a full real-inference round trip against
+TinyStories `stories15M.gguf` staged into the app's internal storage: `llama_model_load_from_file`
+loaded the 98 MB GGUF, sync completion generated 133 chars, streaming generated 120 chars with
+per-token callbacks, metadata/token-count/reset/cancel/release all executed, and the test passed
+— logcat showed "there was a little girl named Lily. She loved to play with her friends and go
+on adventures." The suite stays green either way: without a staged model the smoke test skips
+(CI), and `ModelManagerCoverageTest` was made hermetic (wipes `files/models` in setup) so a
+staged model can't pollute its exact-count assertions. Full regression after enabling x86_64:
+459 tests, 0 failures. Remaining stubs: `whisper_jni.cpp` (STT) is still a placeholder.
 
 ---
 

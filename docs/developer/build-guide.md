@@ -84,7 +84,9 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 ## Native Code
 
 The project includes two native JNI libraries, compiled via CMake + NDK
-(`app/CMakeLists.txt`) and shipped only for `arm64-v8a` and `armeabi-v7a`
+(`app/CMakeLists.txt`). Release ships only `arm64-v8a` and `armeabi-v7a`;
+debug builds additionally include `x86_64` so the local/CI emulator can load
+the REAL llama.cpp library and run real inference (see the smoke test below).
 (see `abiFilters` in `app/build.gradle.kts`):
 
 | Library | Source | Integration |
@@ -126,12 +128,38 @@ git add vendor/llama.cpp
 > for renamed/removed functions (e.g. `llama_kv_cache_clear` was replaced by
 > the `llama_memory_*` API).
 
-### Why the emulator doesn't load it
+### Running real inference on the emulator (x86_64)
 
-The instrumented-test emulator is x86_64, but the libraries ship only for arm
-ABIs, so `System.loadLibrary()` fails there and the Kotlin engine falls back to
-fakes — this is why instrumented coverage works without a model file. The real
-native library runs on arm64/armv7 devices.
+Debug builds include the `x86_64` ABI, so the emulator CAN load `libllama_bridge.so`
+and execute real llama.cpp inference. `NativeSmokeTest` drives the full native
+round trip — load GGUF, metadata, token counts, sync + streaming generation,
+reset/cancel, release — but needs a tiny model staged into the app's **internal**
+`files/smoke` dir (shell-pushed files in the external `Android/data` dir are
+hidden from apps by FUSE on Android 11+):
+
+```bash
+# download a tiny test model (TinyStories — llama.cpp's own CI model)
+curl -L -o stories15M.gguf \
+  https://huggingface.co/ggml-org/models-moved/resolve/main/tinyllamas/stories15M.gguf
+
+# build, install, stage the model, run the smoke test
+./gradlew assembleDebug assembleDebugAndroidTest
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+adb push stories15M.gguf /data/local/tmp/
+adb shell "run-as com.example.openvoice.debug sh -c \
+  'mkdir -p files/smoke && cat /data/local/tmp/stories15M.gguf > files/smoke/stories15M.gguf'"
+adb shell am instrument -w \
+  -e class com.example.openvoice.NativeSmokeTest \
+  -e modelPath /data/user/0/com.example.openvoice.debug/files/smoke/stories15M.gguf \
+  com.example.openvoice.debug.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+The smoke dir is deliberately separate from `files/models` (where ModelManager
+and its tests enumerate installed models) so the two never collide. Without a
+staged model the test skips (CI stays green); with one it proves the whole
+native stack executes for real. On arm devices no staging is needed — the app's
+ModelManager downloads GGUF files into internal storage directly.
 
 ## Common Issues
 

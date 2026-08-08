@@ -4,14 +4,24 @@ import android.content.Context
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.rule.GrantPermissionRule
 import com.example.openvoice.ui.MainActivity
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AssistantServiceTest {
+
+    // The service declares foregroundServiceType="microphone" (targetSdk 35), so
+    // startForeground() throws SecurityException unless RECORD_AUDIO is granted.
+    // Grant it up front instead of relying on the app's persisted permission
+    // state, which differs between fresh CI emulators and reused local ones.
+    @get:Rule
+    val recordAudioPermission: GrantPermissionRule =
+        GrantPermissionRule.grant(android.Manifest.permission.RECORD_AUDIO)
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
 

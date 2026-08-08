@@ -67,12 +67,23 @@ static bool abort_callback(void*) {
 
 static std::vector<llama_token> tokenize(const llama_vocab* vocab, const char* text) {
     if (vocab == nullptr || text == nullptr) return {};
-    const int32_t n = llama_tokenize(vocab, text, (int32_t) strlen(text), nullptr, 0,
-                                     /*add_special=*/false, /*parse_special=*/true);
+    const int32_t len = (int32_t) strlen(text);
+    // b10326's llama_tokenize has no null-buffer size query: it returns a
+    // NEGATIVE count when the buffer is too small (-n = required capacity).
+    // Byte-fallback BPE is at most ~1 token/byte, so len+1 always fits; the
+    // negative branch below is just defensive against pathological inputs.
+    std::vector<llama_token> tokens(static_cast<size_t>(len) + 1);
+    int32_t n = llama_tokenize(vocab, text, len, tokens.data(), (int32_t) tokens.size(),
+                               /*add_special=*/false, /*parse_special=*/true);
+    if (n < 0) {
+        if (n == INT32_MIN) return {}; // overflow sentinel; -n would be UB
+        const int32_t need = -n;
+        tokens.resize(static_cast<size_t>(need));
+        n = llama_tokenize(vocab, text, len, tokens.data(), need,
+                           /*add_special=*/false, /*parse_special=*/true);
+    }
     if (n <= 0) return {};
-    std::vector<llama_token> tokens(static_cast<size_t>(n));
-    llama_tokenize(vocab, text, (int32_t) strlen(text), tokens.data(), n,
-                   /*add_special=*/false, /*parse_special=*/true);
+    tokens.resize(static_cast<size_t>(n));
     return tokens;
 }
 

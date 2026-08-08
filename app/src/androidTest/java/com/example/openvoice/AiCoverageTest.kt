@@ -35,10 +35,10 @@ import java.io.FileOutputStream
  * guards, ModelManager file/metadata/settings logic, and BenchmarkRunner
  * without a real model.
  *
- * NOTE: the LlamaCppBridge tests assume the native library is never loadable
- * (abiFilters are arm64-v8a/armeabi-v7a only, so the x86_64 emulator always
- * falls back to the Java-side guards). On an arm64 device with the lib built
- * and a model loadable, the "unloaded" assertions would no longer hold.
+ * NOTE: these tests only exercise the "no model loaded" guards, which hold on
+ * every ABI: debug builds also ship x86_64 (so the emulator DOES load the real
+ * llama.cpp library), but modelPtr stays 0 without a GGUF model file, so every
+ * guard below behaves identically. Real inference is covered by NativeSmokeTest.
  */
 @RunWith(AndroidJUnit4::class)
 class LlamaCppBridgeCoverageTest {

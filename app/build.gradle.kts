@@ -42,6 +42,14 @@ android {
             applicationIdSuffix = ".debug"
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
+            // Debug builds also target x86_64 so the local/CI emulator can load
+            // the REAL llama.cpp library and run real inference (see
+            // NativeSmokeTest). Release keeps shipping arm ABIs only.
+            externalNativeBuild {
+                cmake {
+                    abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+                }
+            }
         }
         release {
             isMinifyEnabled = true
