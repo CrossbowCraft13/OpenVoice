@@ -1,6 +1,5 @@
-<div align="center">
-  
-# 🎙️ OpenVoice
+<img width="1518" height="810" alt="image" src="https://github.com/user-attachments/assets/ca8ba3a4-e801-43b4-9969-94163e53405b" />
+
 
 **A private, local-first AI assistant for Android**
 
