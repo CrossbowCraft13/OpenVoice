@@ -15,6 +15,10 @@
 ```bash
 git clone https://github.com/CrossbowCraft13/openvoice.git
 cd openvoice
+
+# llama.cpp is pinned as a Git submodule (vendor/llama.cpp). Without this
+# step the native build fails at CMake configure time.
+git submodule update --init --recursive
 ```
 
 ### 2. Check the development environment
@@ -79,24 +83,55 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 
 ## Native Code
 
-The project includes two native JNI libraries:
+The project includes two native JNI libraries, compiled via CMake + NDK
+(`app/CMakeLists.txt`) and shipped only for `arm64-v8a` and `armeabi-v7a`
+(see `abiFilters` in `app/build.gradle.kts`):
 
 | Library | Source | Integration |
 |---------|--------|-------------|
 | `libwhisper_bridge.so` | `app/src/main/cpp/whisper_jni.cpp` | Whisper.cpp (speech-to-text) |
-| `libllama_bridge.so` | `app/src/main/cpp/llama_jni.cpp` | Llama.cpp (LLM inference) |
+| `libllama_bridge.so` | `app/src/main/cpp/llama_jni.cpp` | **Upstream llama.cpp** (LLM inference) |
 
-These are compiled via CMake + NDK. The build is configured in `app/CMakeLists.txt`.
+### llama.cpp integration
 
-### Adding Whisper.cpp
+`libllama_bridge.so` is a real integration, not a stub:
+
+- **Upstream source**: [llama.cpp](https://github.com/ggml-org/llama.cpp) is pinned
+  as a Git submodule at `vendor/llama.cpp` (currently tag `b10326`).
+- **Build**: `app/CMakeLists.txt` adds the submodule with `add_subdirectory()`,
+  builds `llama` + `ggml`/`ggml-base`/`ggml-cpu` as **static** libraries
+  (`BUILD_SHARED_LIBS=OFF`) and links them into `libllama_bridge.so`, so the
+  app ships a single JNI library per ABI.
+- **Flags**: examples/tests/tools/common are off (`LLAMA_STANDALONE=OFF` when
+  added as a subdirectory); `GGML_OPENMP=OFF` and `GGML_NATIVE=OFF` keep the
+  build NDK-friendly and portable.
+- **JNI**: `llama_jni.cpp` calls the upstream `llama.h` C API directly
+  (sampler chains, `llama_decode`, embeddings, metadata, abort-callback
+  cancellation). `LlamaCppBridge.kt` is unchanged.
+
+### Updating llama.cpp
 
 ```bash
-# Add as Git submodule
-git submodule add https://github.com/ggerganov/whisper.cpp.git app/whisper.cpp
-
-# Update CMakeLists.txt to link libwhisper
-# See comments in app/CMakeLists.txt
+cd vendor/llama.cpp
+git fetch origin tag bXXXXX
+git checkout bXXXXX
+cd ../..
+git add vendor/llama.cpp
+# Then verify the JNI still matches the new llama.h API:
+./gradlew :app:externalNativeBuildDebug
 ```
+
+> The JNI is written against the API of the pinned tag. After a bump, check
+> `app/src/main/cpp/llama_jni.cpp` against `vendor/llama.cpp/include/llama.h`
+> for renamed/removed functions (e.g. `llama_kv_cache_clear` was replaced by
+> the `llama_memory_*` API).
+
+### Why the emulator doesn't load it
+
+The instrumented-test emulator is x86_64, but the libraries ship only for arm
+ABIs, so `System.loadLibrary()` fails there and the Kotlin engine falls back to
+fakes — this is why instrumented coverage works without a model file. The real
+native library runs on arm64/armv7 devices.
 
 ## Common Issues
 
@@ -104,6 +139,12 @@ git submodule add https://github.com/ggerganov/whisper.cpp.git app/whisper.cpp
 ```
 Install NDK 25.2.9519653 via Android Studio SDK Manager.
 Set ANDROID_NDK_HOME environment variable.
+```
+
+### CMake configure fails with a llama.cpp error
+```
+You cloned without submodules. Run:
+  git submodule update --init --recursive
 ```
 
 ### Missing local.properties

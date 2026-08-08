@@ -8,6 +8,8 @@ Welcome to OpenVoice development! This guide will help you understand the codeba
    ```bash
    git clone https://github.com/CrossbowCraft13/openvoice.git
    cd openvoice
+   # llama.cpp is pinned as a Git submodule (vendor/llama.cpp)
+   git submodule update --init --recursive
    ```
 
 2. **Check the command-line prerequisites**

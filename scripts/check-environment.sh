@@ -32,6 +32,16 @@ else
     missing=1
 fi
 
+if [ -f ".gitmodules" ]; then
+    # An initialized submodule's .git is a FILE ("gitdir: ..." pointer), so use -e not -d.
+    if [ -e "vendor/llama.cpp/.git" ] && [ -f "vendor/llama.cpp/CMakeLists.txt" ]; then
+        say "PASS  Git submodules: vendor/llama.cpp initialized"
+    else
+        say "MISS  Git submodules: run 'git submodule update --init --recursive' (llama.cpp is required to build)"
+        missing=1
+    fi
+fi
+
 if command -v java >/dev/null 2>&1; then
     java_version=$(java -version 2>&1 | awk -F '"' '/version/ { print $2; exit }')
     case "$java_version" in

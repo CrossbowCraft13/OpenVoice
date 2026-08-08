@@ -190,6 +190,33 @@ without touching any caller.
 the JNI library can never exercise on x86_64 — they only run on an arm64 device with the
 llama.cpp library actually linked.
 
+### Pass 5 — real llama.cpp integration (2026-08-07)
+
+The native layer is no longer a stub. Upstream llama.cpp is pinned as a Git submodule at
+`vendor/llama.cpp` (tag `b10326`) and compiled statically into `libllama_bridge.so` by
+`app/CMakeLists.txt` (`BUILD_SHARED_LIBS=OFF`, `GGML_OPENMP/NATIVE/LLAMAFILE` off, examples/
+tests/tools skipped via `LLAMA_STANDALONE=OFF`). `llama_jni.cpp` was rewritten against the real
+`llama.h` C API — model load, sampler chains (penalties→top_k→top_p→temp→dist), `llama_decode`
+generation, abort-callback cancellation, `llama_memory_clear` context reset, embeddings,
+metadata enumeration, token counts, and a real tokens/sec benchmark — while keeping the exact
+JNI surface `LlamaCppBridge.kt` declares (zero Kotlin changes).
+
+Verified at the binary level: `libllama_bridge.so` ships in the APK for `arm64-v8a` (10 MB) and
+`armeabi-v7a` (6.4 MB, stripped) with **8,855 defined llama/ggml symbols** and all 10 JNI
+exports. Full regression green: `assembleDebug`, 49/49 unit tests, lint, and **457/457
+instrumented tests** (the x86_64 emulator intentionally never loads the arm-only library, so
+on-device behavior is unchanged). Code review caught and fixed five issues: a JNI local-ref
+leak in the streaming callback (would overflow ART's 512-entry table at maxTokens=512),
+embedding calls now clear the shared context first (repeated embeds otherwise fill the KV
+cache and fail), the sampling seed from `nativeInit` is now used (was second-resolution
+`std::time`), control tokens are always decoded so auto-tracked positions stay in sync, and the
+`check-environment.sh` submodule check was fixed (`-e`, not `-d`, on the `.git` gitlink file).
+All three CI workflows (build, ci, release) now checkout with `submodules: recursive`.
+
+Remaining stubs: `whisper_jni.cpp` is still a placeholder (STT), and `LlamaCppBridge`'s native
+branches still only execute on arm64 devices with a GGUF model — neither is reachable from an
+x86_64 CI emulator, which is why the JaCoCo numbers above are unchanged.
+
 ---
 
 ## Architecture Overview
@@ -246,7 +273,7 @@ Audio → VAD → WakeWord → STT (Whisper.cpp) → Intent → CapabilityRouter
 | ModelManager | `ai/ModelManager.kt` | 277 | Download, SHA-256 verify, activate, delete |
 | BenchmarkRunner | `ai/BenchmarkRunner.kt` | 122 | tok/s, first-token, cold/warm start |
 | DeveloperConsole | `developer/DeveloperConsole.kt` | 214 | Live pipeline visualization |
-| llama_jni.cpp | `cpp/llama_jni.cpp` | 251 | Native JNI stubs |
+| llama_jni.cpp | `cpp/llama_jni.cpp` | ~340 | JNI bridge → upstream llama.cpp (b10326) |
 
 ## Phase 4 — Accessibility Intelligence (Complete)
 
@@ -301,7 +328,9 @@ LLM            0.63        4         Complex understanding
 
 - Requires Android SDK 35 + NDK 25.2.9519653
 - ONNX Runtime Android (`ai.onnxruntime:onnxruntime-android`)
-- llama.cpp native bridge is currently a compile-time stub; production inference requires the upstream library integration
+- llama.cpp native bridge is a real integration (submodule `vendor/llama.cpp` at b10326, statically
+  linked into `libllama_bridge.so`, arm64-v8a + armeabi-v7a). Requires `git submodule update
+  --init --recursive` after cloning
 - ML Kit text-recognition (`com.google.mlkit:text-recognition`)
 - whisper.cpp native bridge is currently a compile-time stub; production STT requires the upstream library integration
 - Piper ONNX models (for TTS)
@@ -309,6 +338,9 @@ LLM            0.63        4         Complex understanding
 ## Build Instructions
 
 ```bash
+# llama.cpp is a Git submodule — required before the first build:
+git submodule update --init --recursive
+
 # The Gradle 8.6 wrapper is checked in; no one-time generation is required.
 ./gradlew --version
 

@@ -119,6 +119,8 @@ It reports missing tools and exact setup guidance before Gradle fails with a les
 ```bash
 git clone https://github.com/CrossbowCraft13/openvoice.git
 cd openvoice
+# llama.cpp is pinned as a Git submodule (vendor/llama.cpp)
+git submodule update --init --recursive
 ./gradlew assembleDebug
 ```
 
@@ -210,8 +212,8 @@ Apache 2.0 — See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- [whisper.cpp](https://github.com/ggerganov/whisper.cpp) by Georgi Gerganov
-- [llama.cpp](https://github.com/ggerganov/llama.cpp) by Georgi Gerganov
+- [whisper.cpp](https://github.com/ggml-org/whisper.cpp) by Georgi Gerganov
+- [llama.cpp](https://github.com/ggml-org/llama.cpp) by Georgi Gerganov
 - [piper](https://github.com/rhasspy/piper) by Rhasspy/Home Assistant
 - [OpenWakeWord](https://github.com/dscripka/openWakeWord) by David Scripka
 - [Silero VAD](https://github.com/snakers4/silero-vad) by Silero Team
