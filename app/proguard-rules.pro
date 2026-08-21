@@ -7,9 +7,9 @@
 -keep class ai.onnxruntime.** { *; }
 
 # Keep JNI bridge for Whisper.cpp
--keep class com.example.openvoice.stt.WhisperCppBridge { *; }
--keep class com.example.openvoice.stt.WhisperCppBridge$* { *; }
--keepclassmembers class com.example.openvoice.stt.WhisperCppBridge {
+-keep class io.github.crossbowcraft13.openvoice.stt.WhisperCppBridge { *; }
+-keep class io.github.crossbowcraft13.openvoice.stt.WhisperCppBridge$* { *; }
+-keepclassmembers class io.github.crossbowcraft13.openvoice.stt.WhisperCppBridge {
     native <methods>;
 }
 
@@ -24,20 +24,20 @@
 -keep @androidx.room.Dao class *
 
 # Keep data models for serialization
--keep class com.example.openvoice.data.** { *; }
+-keep class io.github.crossbowcraft13.openvoice.data.** { *; }
 
 # Keep UI models
--keep class com.example.openvoice.ui.** { *; }
+-keep class io.github.crossbowcraft13.openvoice.ui.** { *; }
 
 # Keep accessibility service
--keep class com.example.openvoice.accessibility.** { *; }
+-keep class io.github.crossbowcraft13.openvoice.accessibility.** { *; }
 
 # Keep operator classes
--keep class com.example.openvoice.operator.** { *; }
+-keep class io.github.crossbowcraft13.openvoice.operator.** { *; }
 
 # Keep VAD and wake word engines
--keep class com.example.openvoice.vad.** { *; }
--keep class com.example.openvoice.wakeword.** { *; }
+-keep class io.github.crossbowcraft13.openvoice.vad.** { *; }
+-keep class io.github.crossbowcraft13.openvoice.wakeword.** { *; }
 
 # Kotlin coroutines
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}

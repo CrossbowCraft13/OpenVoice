@@ -227,7 +227,7 @@ static std::vector<std::string> read_stops(JNIEnv* env, jobjectArray stop) {
 extern "C" {
 
 JNIEXPORT jlong JNICALL
-Java_com_example_openvoice_ai_LlamaCppBridge_nativeInit(
+Java_io_github_crossbowcraft13_openvoice_ai_LlamaCppBridge_nativeInit(
     JNIEnv* env, jclass /*clazz*/, jstring path, jint n_threads, jint n_ctx, jlong seed) {
     static std::once_flag backend_flag;
     std::call_once(backend_flag, []() { llama_backend_init(); });
@@ -270,7 +270,7 @@ Java_com_example_openvoice_ai_LlamaCppBridge_nativeInit(
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_openvoice_ai_LlamaCppBridge_nativeComplete(
+Java_io_github_crossbowcraft13_openvoice_ai_LlamaCppBridge_nativeComplete(
     JNIEnv* env, jclass /*clazz*/, jlong ptr, jstring prompt,
     jint max_tokens, jfloat temperature, jint top_k, jfloat top_p,
     jfloat repeat_penalty, jobjectArray stop) {
@@ -291,7 +291,7 @@ Java_com_example_openvoice_ai_LlamaCppBridge_nativeComplete(
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_openvoice_ai_LlamaCppBridge_nativeCompleteStream(
+Java_io_github_crossbowcraft13_openvoice_ai_LlamaCppBridge_nativeCompleteStream(
     JNIEnv* env, jclass /*clazz*/, jlong ptr, jstring prompt,
     jint max_tokens, jfloat temperature, jint top_k, jfloat top_p,
     jfloat repeat_penalty, jobjectArray stop, jobject callback) {
@@ -331,7 +331,7 @@ Java_com_example_openvoice_ai_LlamaCppBridge_nativeCompleteStream(
 }
 
 JNIEXPORT jfloatArray JNICALL
-Java_com_example_openvoice_ai_LlamaCppBridge_nativeEmbed(
+Java_io_github_crossbowcraft13_openvoice_ai_LlamaCppBridge_nativeEmbed(
     JNIEnv* env, jclass /*clazz*/, jlong ptr, jstring text) {
     jfloatArray empty = env->NewFloatArray(0);
     if (ptr == 0 || text == nullptr) return empty;
@@ -369,13 +369,13 @@ Java_com_example_openvoice_ai_LlamaCppBridge_nativeEmbed(
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_openvoice_ai_LlamaCppBridge_nativeCancel(
+Java_io_github_crossbowcraft13_openvoice_ai_LlamaCppBridge_nativeCancel(
     JNIEnv* /*env*/, jclass /*clazz*/, jlong /*ptr*/) {
     g_cancel.store(true, std::memory_order_relaxed);
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_openvoice_ai_LlamaCppBridge_nativeRelease(
+Java_io_github_crossbowcraft13_openvoice_ai_LlamaCppBridge_nativeRelease(
     JNIEnv* /*env*/, jclass /*clazz*/, jlong ptr) {
     g_cancel.store(false, std::memory_order_relaxed);
     if (ptr == 0) return;
@@ -396,7 +396,7 @@ Java_com_example_openvoice_ai_LlamaCppBridge_nativeRelease(
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_openvoice_ai_LlamaCppBridge_nativeBenchmark(
+Java_io_github_crossbowcraft13_openvoice_ai_LlamaCppBridge_nativeBenchmark(
     JNIEnv* env, jclass /*clazz*/, jlong ptr, jint power, jstring format) {
     if (ptr == 0) return env->NewStringUTF("{\"status\":\"no_model\"}");
 
@@ -441,7 +441,7 @@ Java_com_example_openvoice_ai_LlamaCppBridge_nativeBenchmark(
 }
 
 JNIEXPORT jobjectArray JNICALL
-Java_com_example_openvoice_ai_LlamaCppBridge_nativeMetadata(
+Java_io_github_crossbowcraft13_openvoice_ai_LlamaCppBridge_nativeMetadata(
     JNIEnv* env, jclass /*clazz*/, jlong ptr) {
     jclass string_class = env->FindClass("java/lang/String");
     std::vector<std::string> entries;
@@ -475,7 +475,7 @@ Java_com_example_openvoice_ai_LlamaCppBridge_nativeMetadata(
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_openvoice_ai_LlamaCppBridge_nativeResetContext(
+Java_io_github_crossbowcraft13_openvoice_ai_LlamaCppBridge_nativeResetContext(
     JNIEnv* /*env*/, jclass /*clazz*/, jlong ptr) {
     if (ptr == 0) return;
     llama_context* ctx = reinterpret_cast<llama_context*>(ptr);
@@ -483,7 +483,7 @@ Java_com_example_openvoice_ai_LlamaCppBridge_nativeResetContext(
 }
 
 JNIEXPORT jint JNICALL
-Java_com_example_openvoice_ai_LlamaCppBridge_nativeTokenCount(
+Java_io_github_crossbowcraft13_openvoice_ai_LlamaCppBridge_nativeTokenCount(
     JNIEnv* env, jclass /*clazz*/, jlong ptr, jstring text) {
     if (ptr == 0 || text == nullptr) return 0;
     const char* ctext = env->GetStringUTFChars(text, nullptr);

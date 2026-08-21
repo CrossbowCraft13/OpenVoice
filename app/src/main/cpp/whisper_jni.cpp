@@ -28,7 +28,7 @@
 extern "C" {
 
 JNIEXPORT jlong JNICALL
-Java_com_example_openvoice_stt_WhisperSttEngine_nativeInit(
+Java_io_github_crossbowcraft13_openvoice_stt_WhisperSttEngine_nativeInit(
     JNIEnv* env, jobject thiz, jstring path) {
     const char* cpath = env->GetStringUTFChars(path, nullptr);
     if (cpath == nullptr) return 0;
@@ -44,7 +44,7 @@ Java_com_example_openvoice_stt_WhisperSttEngine_nativeInit(
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_openvoice_stt_WhisperSttEngine_nativeTranscribe(
+Java_io_github_crossbowcraft13_openvoice_stt_WhisperSttEngine_nativeTranscribe(
     JNIEnv* env, jobject thiz, jlong ptr, jshortArray audio, jint len) {
     if (ptr == 0 || len <= 0) return env->NewStringUTF("");
     struct whisper_context* ctx = reinterpret_cast<struct whisper_context*>(ptr);
@@ -84,7 +84,7 @@ Java_com_example_openvoice_stt_WhisperSttEngine_nativeTranscribe(
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_openvoice_stt_WhisperSttEngine_nativeRelease(
+Java_io_github_crossbowcraft13_openvoice_stt_WhisperSttEngine_nativeRelease(
     JNIEnv* env, jobject thiz, jlong ptr) {
     if (ptr != 0) {
         whisper_free(reinterpret_cast<struct whisper_context*>(ptr));
@@ -93,7 +93,7 @@ Java_com_example_openvoice_stt_WhisperSttEngine_nativeRelease(
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_openvoice_stt_WhisperSttEngine_nativeResetState(
+Java_io_github_crossbowcraft13_openvoice_stt_WhisperSttEngine_nativeResetState(
     JNIEnv* env, jobject thiz, jlong ptr) {
     if (ptr != 0) {
         whisper_reset_timings(reinterpret_cast<struct whisper_context*>(ptr));

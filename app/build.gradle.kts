@@ -24,12 +24,12 @@ plugins {
 }
 
 android {
-    namespace = "com.example.openvoice"
+    namespace = "io.github.crossbowcraft13.openvoice"
     compileSdk = 35
     ndkVersion = "25.2.9519653"
 
     defaultConfig {
-        applicationId = "com.example.openvoice"
+        applicationId = "io.github.crossbowcraft13.openvoice"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

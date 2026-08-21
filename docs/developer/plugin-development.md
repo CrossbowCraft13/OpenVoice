@@ -4,7 +4,7 @@
 
 OpenVoice provides a small, in-process plugin SDK for local extensions. Plugins are registered by the host application; this milestone intentionally does not load arbitrary code, install packages, or connect to a marketplace.
 
-The public contract lives in `com.example.openvoice.plugin`:
+The public contract lives in `io.github.crossbowcraft13.openvoice.plugin`:
 
 - `OpenVoicePlugin` — plugin lifecycle and request handler.
 - `PluginManifest` — stable ID, version, description, and declared permissions.

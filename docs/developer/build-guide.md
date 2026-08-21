@@ -147,12 +147,12 @@ curl -L -o stories15M.gguf \
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb push stories15M.gguf /data/local/tmp/
-adb shell "run-as com.example.openvoice.debug sh -c \
+adb shell "run-as io.github.crossbowcraft13.openvoice.debug sh -c \
   'mkdir -p files/smoke && cat /data/local/tmp/stories15M.gguf > files/smoke/stories15M.gguf'"
 adb shell am instrument -w \
-  -e class com.example.openvoice.NativeSmokeTest \
-  -e modelPath /data/user/0/com.example.openvoice.debug/files/smoke/stories15M.gguf \
-  com.example.openvoice.debug.test/androidx.test.runner.AndroidJUnitRunner
+  -e class io.github.crossbowcraft13.openvoice.NativeSmokeTest \
+  -e modelPath /data/user/0/io.github.crossbowcraft13.openvoice.debug/files/smoke/stories15M.gguf \
+  io.github.crossbowcraft13.openvoice.debug.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 The smoke dir is deliberately separate from `files/models` (where ModelManager
