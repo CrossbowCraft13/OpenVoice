@@ -54,7 +54,12 @@ class NativeSmokeTest {
     private fun findTinyModel(): File? {
         val smokeDir = File(context.filesDir, "smoke")
         Logger.i("NativeSmokeTest: pkg=${context.packageName} smokeDir=$smokeDir", "AI")
-        return smokeDir.listFiles()?.firstOrNull { it.isFile && it.length() > 0 }
+        // Only pick llama GGUF files — the smoke dir is shared with
+        // WhisperSmokeTest (which stages ggml-*.bin models), and feeding a
+        // whisper model to llama_load_model would fail.
+        return smokeDir.listFiles()?.firstOrNull {
+            it.isFile && it.length() > 0 && it.name.endsWith(".gguf")
+        }
     }
 
     @Test

@@ -44,13 +44,38 @@ add_subdirectory(../vendor/llama.cpp llama.cpp)
 # Native library: whisper_bridge
 # JNI bridge for Whisper.cpp speech recognition
 # ============================================================
+# whisper.cpp v1.5.5 is pinned as a Git submodule at vendor/whisper.cpp.
+# Its sources are compiled directly into whisper_bridge instead of via
+# add_subdirectory(): both whisper.cpp and llama.cpp define their own
+# `ggml`/`ggml-base` CMake targets, so a single CMake build cannot host both.
+# Each bridge .so statically links its own ggml, so the two libraries coexist
+# in the APK without runtime symbol conflicts. The source set below mirrors
+# upstream's `whisper` target with all non-CPU backends (CUDA/Metal/OpenCL/
+# SYCL/Vulkan) and OpenMP disabled.
+
+set(WHISPER_DIR ../vendor/whisper.cpp)
 
 add_library(whisper_bridge SHARED
     src/main/cpp/whisper_jni.cpp
+    ${WHISPER_DIR}/whisper.cpp
+    ${WHISPER_DIR}/ggml.c
+    ${WHISPER_DIR}/ggml-alloc.c
+    ${WHISPER_DIR}/ggml-backend.c
+    ${WHISPER_DIR}/ggml-quants.c
 )
-target_include_directories(whisper_bridge PRIVATE src/main/cpp)
-target_link_libraries(whisper_bridge android log)
+target_include_directories(whisper_bridge PRIVATE
+    src/main/cpp
+    ${WHISPER_DIR}
+)
+target_link_libraries(whisper_bridge android log m)
 set_target_properties(whisper_bridge PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
+# x86_64 (debug emulator builds): mirror whisper.cpp's own CMake defaults
+# (AVX/AVX2/FMA/F16C on, AVX512 off) so the x86_64 emulator runs the SIMD
+# path instead of the scalar fallback.
+if (ANDROID_ABI STREQUAL "x86_64")
+    target_compile_options(whisper_bridge PRIVATE -mavx -mavx2 -mfma -mf16c)
+endif()
 
 # ============================================================
 # Native library: llama_bridge
