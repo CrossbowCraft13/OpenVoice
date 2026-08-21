@@ -1,4 +1,20 @@
 import org.gradle.testing.jacoco.tasks.JacocoReport
+import java.util.Properties
+
+// ---------------------------------------------------------------------------
+// Release signing — LOCAL ONLY.
+// keystore.properties (gitignored) holds the signing credentials for local
+// builds. When it is absent (e.g. CI), the release build type has no
+// signingConfig, so assembleRelease still produces the unsigned APK that
+// .github/workflows/release.yml signs with repository secrets
+// (r0adkll/sign-android-release).
+// ---------------------------------------------------------------------------
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
 
 plugins {
     id("com.android.application")
@@ -35,6 +51,15 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+            storeFile = keystoreProperties.getProperty("storeFile")?.let { rootProject.file(it) }
+            storePassword = keystoreProperties.getProperty("storePassword")
+        }
+    }
+
     buildTypes {
         debug {
             isDebuggable = true
@@ -52,6 +77,9 @@ android {
             }
         }
         release {
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

@@ -14,3 +14,7 @@ local.properties
 *.aab
 *.jks
 *.keystore
+
+# Local release signing credentials (never commit passwords)
+keystore.properties
+/keystore/
