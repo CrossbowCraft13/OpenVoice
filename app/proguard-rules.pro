@@ -3,10 +3,6 @@
 # Privacy-first: never obfuscate user data paths
 # ============================================================
 
-# Keep TensorFlow Lite models
--keep class org.tensorflow.lite.** { *; }
--keep class org.tensorflow.lite.support.** { *; }
-
 # Keep ONNX Runtime
 -keep class ai.onnxruntime.** { *; }
 

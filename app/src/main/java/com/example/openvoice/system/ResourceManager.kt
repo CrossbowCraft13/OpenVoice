@@ -48,9 +48,20 @@ class ResourceManager @Inject constructor(
     private var lastState: ResourceState? = null
 
     /**
+     * Test seam for exercising resource-tier decisions without mutating device state.
+     */
+    internal var resourceStateOverride: (() -> ResourceState)? = null
+
+    /**
      * Get the current resource state.
      */
     suspend fun getResourceState(): ResourceState = withContext(Dispatchers.IO) {
+        val overridden = resourceStateOverride?.invoke()
+        if (overridden != null) {
+            lastState = overridden
+            return@withContext overridden
+        }
+
         val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
 

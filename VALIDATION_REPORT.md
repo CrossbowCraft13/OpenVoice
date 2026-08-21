@@ -2,7 +2,7 @@
 
 ## Project: OpenVoice — Private, Local-First Android Voice Assistant
 
-**Date:** 2026-07-28 (verified 2026-08-06, coverage re-verified 2026-08-07)
+**Date:** 2026-07-28 (verified 2026-08-06, coverage re-verified 2026-08-20)
 **Build:** 48 Kotlin sources · 2 C++ JNI (308 lines) · 8 test suites · 61+ source files
 
 **Status:** Phases 1–5 complete. All components implemented and audited.
@@ -226,7 +226,116 @@ on adventures." The suite stays green either way: without a staged model the smo
 staged model can't pollute its exact-count assertions. Full regression after enabling x86_64:
 459 tests, 0 failures. Remaining stubs: `whisper_jni.cpp` (STT) is still a placeholder.
 
+### Pass 6 — 80% line-coverage gate (2026-08-19)
+
+Provisioned JDK 17 and ran the full debug suite on the installed API 35 `ovtest` x86_64
+emulator. The new depth tests cover knowledge-graph edge cases, AI settings/profiler and
+vision seams, planner decomposition and cost selection, execution retries/cancellation,
+learning persistence, and full ExplainMode formatting. They also caught and fixed a real
+configuration bug: `frequencyPenalty`, `presencePenalty`, and `stopTokens` were present in
+`AiConfig` but were silently dropped by `AiSettings.save()`/`load()`.
+
+| Check | Result |
+|-------|--------|
+| `./gradlew testDebugUnitTest` | ✅ BUILD SUCCESSFUL |
+| `./gradlew connectedDebugAndroidTest` | ✅ **477 tests, 0 failures, 1 intentional skip** |
+| `./gradlew jacocoFullReport` | ✅ BUILD SUCCESSFUL |
+
+| Measure | Result |
+|---------|-------:|
+| Merged instruction coverage | **76.10%** |
+| **Merged line coverage** | **80.16%** |
+| Merged branch coverage | **56.22%** |
+| `memory` line coverage | **90.07%** |
+| `ai` line coverage | **86.60%** |
+| `perception` line coverage | **85.93%** |
+| `planner` line coverage | **87.22%** |
+
+The roadmap's 80% line gate is now crossed by 0.16 points. Remaining uncovered code is
+primarily attached-service behavior (`VoiceAccessibilityService`), native JNI bodies that
+JaCoCo cannot instrument, and platform/model-dependent perception branches.
+
+### Pass 7 — staged 60% branch-coverage gate (2026-08-20)
+
+Added focused branch-depth coverage for operator parsing and graceful Android failures,
+all resource performance tiers through a small `ResourceManager.resourceStateOverride`
+test seam, Developer Console route/timeline states, and TaskBlackboard completion and
+screen-requirement decisions. The full suite now runs 482 tests with one intentional native
+smoke-test skip, and CI raises its branch floor from 55% to 60% while retaining the 80% line gate.
+
+| Check | Result |
+|-------|--------|
+| `./gradlew compileDebugAndroidTestKotlin` | ✅ BUILD SUCCESSFUL |
+| `./gradlew connectedDebugAndroidTest` | ✅ **482 tests, 0 failures, 1 intentional skip** |
+| `./gradlew jacocoFullReport` | ✅ BUILD SUCCESSFUL |
+
+| Measure | Result |
+|---------|-------:|
+| Merged instruction coverage | **77.95%** |
+| **Merged line coverage** | **81.78%** |
+| **Merged branch coverage** | **60.09%** |
+
+The branch gate now has 0.09 points of headroom. Remaining high-volume gaps are mostly
+platform-bound accessibility-service callbacks, voice-pipeline coroutine event branches,
+and native/model-dependent paths.
+
+### Pass 8 — 65% branch-coverage gate (2026-08-20)
+
+Expanded the branch suite across planner safety and recovery matrices, every accessibility
+role classifier, router fallbacks, permission-state summaries, model filename parameter
+inference, UiNode label fallback, and direct PerceptionEngine answer/fusion paths. The full
+suite now runs 493 tests with one intentional native smoke-test skip, and CI raises its branch
+floor from 60% to 65% while retaining the 80% line gate.
+
+| Check | Result |
+|-------|--------|
+| `./gradlew compileDebugAndroidTestKotlin` | ✅ BUILD SUCCESSFUL |
+| `./gradlew connectedDebugAndroidTest` | ✅ **493 tests, 0 failures, 1 intentional skip** |
+| `./gradlew testDebugUnitTest` | ✅ BUILD SUCCESSFUL |
+| `./gradlew jacocoFullReport` | ✅ BUILD SUCCESSFUL |
+
+| Measure | Result |
+|---------|-------:|
+| Merged instruction coverage | **80.10%** |
+| **Merged line coverage** | **83.48%** |
+| **Merged branch coverage** | **65.08%** |
+
+The branch gate now has 0.08 points of headroom. The custom JaCoCo report also now reads
+AGP's ASM-transformed debug classes, matching the classes loaded by the coverage agent and
+eliminating the prior non-fatal CRC mismatch warnings for Hilt entrypoints. Remaining
+uncovered branches are primarily attached accessibility-service behavior, voice-pipeline
+coroutine event handling, and native or model-dependent paths that JaCoCo cannot fully
+exercise on the stock emulator.
+
 ---
+
+### Pass 9 — TensorFlow namespace warning cleanup (2026-08-20)
+
+Audited the Android source and dependency graph after the build reported duplicate TensorFlow
+Lite namespace warnings. No application or test source imports TensorFlow Lite APIs; wake-word
+and VAD inference use ONNX Runtime (`WakeWordDetector` and `SileroVadEngine`). The unused
+`tensorflow-lite` and `tensorflow-lite-support` declarations were therefore removed instead
+of suppressing the warning or excluding manifests. The stale TensorFlow Lite R8 keep rules and
+NOTICE entry were removed at the same time so release configuration and licensing metadata match
+the shipped dependency set.
+
+| Check | Result |
+|-------|--------|
+| `./gradlew :app:assembleDebug` | ✅ BUILD SUCCESSFUL; no TensorFlow namespace warnings |
+| `./gradlew :app:assembleRelease` | ✅ BUILD SUCCESSFUL; R8 completed with aligned keep rules |
+| `./gradlew :app:lint` | ✅ BUILD SUCCESSFUL |
+| `./gradlew :app:jacocoFullReport` | ✅ **493 tests, 0 failures, 1 intentional skip** |
+| `./gradlew :app:dependencyInsight --dependency tensorflow` | ✅ No matching dependencies |
+
+| Measure | Result |
+|---------|-------:|
+| Merged instruction coverage | **80.11%** |
+| **Merged line coverage** | **83.48%** |
+| **Merged branch coverage** | **65.08%** |
+
+The existing 80% line and 65% branch gates remain green. The only remaining build-time notes
+are unrelated Java deprecation and annotation-processor messages; the duplicate TensorFlow
+namespace warning is gone.
 
 ## Architecture Overview
 

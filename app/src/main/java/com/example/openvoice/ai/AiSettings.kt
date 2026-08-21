@@ -55,6 +55,10 @@ class AiSettings @Inject constructor(
         topK = getInt("top_k", 40),
         topP = getFloat("top_p", 0.95f),
         repeatPenalty = getFloat("repeat_penalty", 1.1f),
+        frequencyPenalty = getFloat("frequency_penalty", 0.0f),
+        presencePenalty = getFloat("presence_penalty", 0.0f),
+        stopTokens = prefs.getStringSet("stop_tokens", setOf("</s>", "<|im_end|>"))?.toList()
+            ?: listOf("</s>", "<|im_end|>"),
         embeddingsEnabled = getBoolean("embeddings_enabled", true),
         autoDownloadModels = getBoolean("auto_download_models", true),
         maxStorageGb = getInt("max_storage_gb", 10)
@@ -74,6 +78,9 @@ class AiSettings @Inject constructor(
             .putInt("top_k", config.topK)
             .putFloat("top_p", config.topP)
             .putFloat("repeat_penalty", config.repeatPenalty)
+            .putFloat("frequency_penalty", config.frequencyPenalty)
+            .putFloat("presence_penalty", config.presencePenalty)
+            .putStringSet("stop_tokens", config.stopTokens.toSet())
             .putBoolean("embeddings_enabled", config.embeddingsEnabled)
             .putBoolean("auto_download_models", config.autoDownloadModels)
             .putInt("max_storage_gb", config.maxStorageGb)

@@ -377,6 +377,17 @@ class PerceptionEngine @Inject constructor(
 
     fun getLastContext(): ScreenContext? = lastScreenContext
 
+    /** Test seams for exercising fusion and answer-tier decisions without a live service. */
+    internal fun setLastContextForTesting(context: ScreenContext?) {
+        lastScreenContext = context
+    }
+
+    internal fun fuseTextForTesting(context: ScreenContext, ocr: OcrResult): ScreenContext =
+        fuseText(context, ocr)
+
+    internal fun fuseVisionForTesting(context: ScreenContext, vision: VisionResult): ScreenContext =
+        fuseVision(context, vision)
+
     /**
      * Answer a question about the current screen.
      * Chooses the cheapest capable source.

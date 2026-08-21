@@ -24,7 +24,6 @@ This product includes software from the following open-source projects:
 - OpenWakeWord (Apache 2.0) - https://github.com/dscripka/openWakeWord
 - Silero VAD (MIT License) - https://github.com/snakers4/silero-vad
 - ONNX Runtime (MIT License) - https://github.com/microsoft/onnxruntime
-- TensorFlow Lite (Apache 2.0) - https://www.tensorflow.org/lite
 - Hilt (Apache 2.0) - https://dagger.dev/hilt/
 - Jetpack Compose (Apache 2.0) - https://developer.android.com/jetpack/compose
 - Material 3 (Apache 2.0) - https://m3.material.io/

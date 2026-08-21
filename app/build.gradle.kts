@@ -159,9 +159,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
-    // TensorFlow Lite - Wake Word & NLU models
-    implementation("org.tensorflow:tensorflow-lite:2.14.0")
-    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    // Wake word and VAD inference use ONNX Runtime below; no TensorFlow Lite
+    // APIs are used by the current Android sources.
 
     // ONNX Runtime - Piper TTS & Silero VAD
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.16.3")
@@ -228,11 +227,15 @@ val jacocoExcludedClasses = listOf(
     "**/*_Impl*.class",
 )
 
-val jacocoClassDirs = fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
-        exclude(jacocoExcludedClasses)
-    } + fileTree(layout.buildDirectory.dir("intermediates/javac/debug/classes")) {
-        exclude(jacocoExcludedClasses)
-    }
+// AGP's ASM coverage transform is the runtime class source for both the JVM
+// and on-device coverage agents. Using the pre-transform Kotlin output works
+// for most classes but produces CRC mismatches for Hilt-transformed entrypoints
+// (MainActivity, AssistantService, and OpenVoiceApplication).
+val jacocoClassDirs = fileTree(
+    layout.buildDirectory.dir("intermediates/classes/debug/transformDebugClassesWithAsm/dirs")
+) {
+    exclude(jacocoExcludedClasses)
+}
 
 val jacocoSourceDirs = files("src/main/java")
 
