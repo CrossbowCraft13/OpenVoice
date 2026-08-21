@@ -33,6 +33,12 @@ class AssistantServiceTest {
 
         try {
             AssistantService.stop(context)
+            // stopService() and startForegroundService() are async binder
+            // calls. If the stop lands after the start, the system kills the
+            // process with ForegroundServiceDidNotStartInTimeException — the
+            // same settle ReliabilityManager.restartService() uses between
+            // its stop and start.
+            Thread.sleep(500)
             assertFalse(AssistantService.isRunning())
 
             AssistantService.start(context)
