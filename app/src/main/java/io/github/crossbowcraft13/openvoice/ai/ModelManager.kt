@@ -78,6 +78,19 @@ class ModelManager @Inject constructor(
             "", 8.0f, 6144, 4900),
     )
 
+    /**
+     * Resolve the DeviceProfiler's recommendation to a concrete downloadable
+     * model, or null when the device cannot run any model comfortably.
+     */
+    fun recommendModelForDevice(): RecommendedModel? {
+        val rec = profiler.recommendModel()
+        if (rec.tier == DeviceProfiler.ModelTier.NONE) return null
+        val target = rec.suggestedModel.removeSuffix(".gguf")
+        return recommendedModels.firstOrNull {
+            it.name.equals(target, ignoreCase = true)
+        }
+    }
+
     private val modelDir: File get() = File(context.filesDir, "models").also { it.mkdirs() }
 
     // ── Installed Models ────────────────────────────────────────────────
@@ -165,6 +178,18 @@ class ModelManager @Inject constructor(
             Logger.e("Download failed: ${e.message}", "ModelManager")
             false
         }
+    }
+
+    /**
+     * Download a model and, on success, activate it as the inference engine's
+     * active model. Returns false if the download or activation failed.
+     */
+    suspend fun downloadAndActivate(
+        model: RecommendedModel,
+        onProgress: (Float) -> Unit = {}
+    ): Boolean {
+        if (!downloadModel(model, onProgress)) return false
+        return setActiveModel(File(modelDir, model.name + ".gguf").absolutePath)
     }
 
     // ── Activation ──────────────────────────────────────────────────────

@@ -197,4 +197,14 @@ Create local.properties with:
 
 The project uses GitHub Actions. See `.github/workflows/` for:
 - `ci.yml` — Build, test, lint on every push
-- `release.yml` — Signed release on version tags
+- `release.yml` — Auto-release: every merge to `main` bumps the version in the
+  root `VERSION` file, builds and signs the release APK + AAB, tags the repo
+  `v<version>`, and publishes a GitHub Release with changelog and checksums.
+  Pushing a `v*` tag manually (or using the `workflow_dispatch` trigger)
+  publishes that version without bumping.
+
+`VERSION` (repo root, format `X.Y.Z` or `X.Y.Z-suffix` like `1.0.1-beta`) is the
+single source of truth for `versionName`/`versionCode` — `app/build.gradle.kts`
+reads it at configuration time. The release workflow needs four repository
+secrets for signing: `SIGNING_KEY` (base64-encoded keystore), `KEY_ALIAS`,
+`KEY_STORE_PASSWORD`, and `KEY_PASSWORD`.

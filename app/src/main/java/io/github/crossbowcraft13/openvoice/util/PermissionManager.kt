@@ -3,6 +3,7 @@ package io.github.crossbowcraft13.openvoice.util
 import android.Manifest
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.annotation.SuppressLint
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -96,10 +97,23 @@ class PermissionManager(private val context: Context) {
     }
 
     fun openAccessibilitySettings() {
-        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+        // There is no public Settings constant for the per-service details
+        // screen, so use the documented action string and fall back to the
+        // general accessibility list if a device doesn't resolve it.
+        val intent = Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS").apply {
+            putExtra(
+                Intent.EXTRA_COMPONENT_NAME,
+                ComponentName(context, VoiceAccessibilityService::class.java)
+            )
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(intent)
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        }
     }
 
     // ── Battery Optimization ─────────────────────────────────────────────────

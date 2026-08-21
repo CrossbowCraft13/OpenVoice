@@ -4,16 +4,37 @@ import java.util.Properties
 // ---------------------------------------------------------------------------
 // Release signing — LOCAL ONLY.
 // keystore.properties (gitignored) holds the signing credentials for local
-// builds. When it is absent (e.g. CI), the release build type has no
-// signingConfig, so assembleRelease still produces the unsigned APK that
-// .github/workflows/release.yml signs with repository secrets
-// (r0adkll/sign-android-release).
+// builds. CI creates the same file from repository secrets (SIGNING_KEY,
+// KEY_ALIAS, KEY_STORE_PASSWORD, KEY_PASSWORD) before building, so both the
+// release APK and AAB come out signed directly from Gradle. When the file is
+// absent, the release build type has no signingConfig.
 // ---------------------------------------------------------------------------
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) {
         keystorePropertiesFile.inputStream().use { load(it) }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Versioning — SINGLE SOURCE OF TRUTH is the VERSION file at the repo root
+// (format: X.Y.Z or X.Y.Z-suffix, e.g. 1.0.1-beta). The auto-release workflow
+// bumps it on every merge to main. versionCode is derived so it stays
+// monotonic with the version name (major*10000 + minor*100 + patch).
+// ---------------------------------------------------------------------------
+val appVersionName = rootProject.file("VERSION")
+    .takeIf { it.exists() }
+    ?.readText()
+    ?.trim()
+    ?.takeIf { it.isNotEmpty() }
+    ?: "1.0.0-beta"
+
+val appVersionCode = run {
+    val parts = appVersionName.substringBefore("-").split(".")
+    val major = parts.getOrNull(0)?.toIntOrNull() ?: 0
+    val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+    val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
+    major * 10000 + minor * 100 + patch
 }
 
 plugins {
@@ -32,8 +53,8 @@ android {
         applicationId = "io.github.crossbowcraft13.openvoice"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0-beta"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

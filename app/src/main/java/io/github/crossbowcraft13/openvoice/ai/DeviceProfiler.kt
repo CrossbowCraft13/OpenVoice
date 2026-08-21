@@ -123,7 +123,7 @@ class DeviceProfiler @Inject constructor(
                 Recommendation(ModelTier.SMALL, "Gemma-2B-Instruct-Q4_K_M.gguf", 8192, 2,
                     "Small model: ${"%.1f".format(ramGb)}GB RAM")
             ramGb < 12 ->
-                Recommendation(ModelTier.SMALL, "Phi-3-mini-4k-instruct-Q4_K_M.gguf", 8192, 4,
+                Recommendation(ModelTier.SMALL, "Phi-3-mini-4k-Q4_K_M.gguf", 8192, 4,
                     "Medium device: ${"%.1f".format(ramGb)}GB RAM")
             ramGb < 16 ->
                 Recommendation(ModelTier.MEDIUM, "Mistral-7B-Instruct-v0.3-Q4_K_M.gguf", 16384, 4,
