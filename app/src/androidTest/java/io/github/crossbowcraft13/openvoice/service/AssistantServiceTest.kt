@@ -32,6 +32,16 @@ class AssistantServiceTest {
         val scenario = ActivityScenario.launch(MainActivity::class.java)
 
         try {
+            // API 35 gives a startForegroundService -> startForeground window of
+            // ~5s; on a freshly-started or busy process the ANR fires before the
+            // service ever runs, crashing the process with
+            // ForegroundServiceDidNotStartInTimeException. Wait for the main
+            // thread to go idle and give the cold process a moment to settle so
+            // the service create is dispatched promptly.
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                .waitForIdleSync()
+            Thread.sleep(1000)
+
             AssistantService.stop(context)
             // stopService() and startForegroundService() are async binder
             // calls. If the stop lands after the start, the system kills the
@@ -42,9 +52,10 @@ class AssistantServiceTest {
             assertFalse(AssistantService.isRunning())
 
             AssistantService.start(context)
-            // startForegroundService is asynchronous; poll for registration.
+            // startForegroundService is asynchronous; poll for registration
+            // for the full 5s window so slow (but healthy) emulators pass.
             var running = false
-            repeat(20) {
+            repeat(50) {
                 if (AssistantService.isRunning()) {
                     running = true
                     return@repeat
