@@ -204,8 +204,8 @@ dependencies {
     implementation("androidx.work:work-rxjava2:2.9.0")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
     // Wake word and VAD inference use ONNX Runtime below; no TensorFlow Lite
@@ -221,7 +221,7 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("com.google.truth:truth:1.1.3")
 
@@ -232,7 +232,7 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.5.0")
     androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation("com.google.truth:truth:1.1.3")
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 
     // Compose UI testing
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.01.00"))
