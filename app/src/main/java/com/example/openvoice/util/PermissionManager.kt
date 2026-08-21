@@ -2,6 +2,7 @@ package com.example.openvoice.util
 
 import android.Manifest
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -31,6 +32,10 @@ class PermissionManager(private val context: Context) {
     )
 
     companion object {
+        // POST_NOTIFICATIONS is a compile-time String constant (inlined by the
+        // compiler), so referencing it below API 33 is safe; isNotificationGranted()
+        // and the request flows already gate on SDK_INT >= 33.
+        @SuppressLint("InlinedApi")
         val REQUIRED_PERMISSIONS = arrayOf(
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.POST_NOTIFICATIONS,
@@ -40,6 +45,8 @@ class PermissionManager(private val context: Context) {
         )
 
         fun audioPermission() = Manifest.permission.RECORD_AUDIO
+
+        @SuppressLint("InlinedApi")
         fun notificationPermission() = Manifest.permission.POST_NOTIFICATIONS
     }
 
@@ -120,13 +127,12 @@ class PermissionManager(private val context: Context) {
 
     fun openNotificationSettings() {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
+            // ACTION_APP_NOTIFICATION_SETTINGS is API 26+; minSdk is 26.
+            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
+            context.startActivity(intent)
         } catch (e: Exception) {
             openAppSettings()
         }

@@ -1,6 +1,7 @@
 package com.example.openvoice.system.onboarding
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -53,6 +54,9 @@ class OnboardingFlow @Inject constructor(
         val skipped: Boolean = false
     )
 
+    // POST_NOTIFICATIONS is a compile-time constant (safe below API 33); the
+    // notifications step is only presented to API 33+ users by the request flow.
+    @SuppressLint("InlinedApi")
     val steps = listOf(
         OnboardingStep(
             id = "welcome",

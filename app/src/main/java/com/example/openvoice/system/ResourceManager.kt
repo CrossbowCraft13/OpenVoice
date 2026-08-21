@@ -91,13 +91,19 @@ class ResourceManager @Inject constructor(
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
             return DeviceProfiler.ThermalStatus.UNKNOWN
         }
+        val status = powerManager?.currentThermalStatus ?: return DeviceProfiler.ThermalStatus.UNKNOWN
+        // Subject-less when (boolean conditions) avoids lint's SwitchIntDef
+        // enumeration of the THERMAL_STATUS IntDef; EMERGENCY/SHUTDOWN (API
+        // 30/31) fall through to CRITICAL via else.
         return try {
-            when (powerManager?.currentThermalStatus) {
-                null -> DeviceProfiler.ThermalStatus.UNKNOWN
-                PowerManager.THERMAL_STATUS_NONE, PowerManager.THERMAL_STATUS_LIGHT ->
+            when {
+                status == PowerManager.THERMAL_STATUS_NONE ||
+                    status == PowerManager.THERMAL_STATUS_LIGHT ->
                     DeviceProfiler.ThermalStatus.COOL
-                PowerManager.THERMAL_STATUS_MODERATE -> DeviceProfiler.ThermalStatus.WARM
-                PowerManager.THERMAL_STATUS_SEVERE -> DeviceProfiler.ThermalStatus.HOT
+                status == PowerManager.THERMAL_STATUS_MODERATE ->
+                    DeviceProfiler.ThermalStatus.WARM
+                status == PowerManager.THERMAL_STATUS_SEVERE ->
+                    DeviceProfiler.ThermalStatus.HOT
                 else -> DeviceProfiler.ThermalStatus.CRITICAL
             }
         } catch (_: Exception) { DeviceProfiler.ThermalStatus.UNKNOWN }

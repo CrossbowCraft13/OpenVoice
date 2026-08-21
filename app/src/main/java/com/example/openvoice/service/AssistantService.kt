@@ -58,11 +58,10 @@ class AssistantService : Service() {
     }
 
     private fun createChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val ch = NotificationChannel(CHANNEL_ID, "OpenVoice Assistant", NotificationManager.IMPORTANCE_LOW)
-            ch.setShowBadge(false)
-            (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(ch)
-        }
+        // NotificationChannel is API 26+; minSdk is 26, so no guard is needed.
+        val ch = NotificationChannel(CHANNEL_ID, "OpenVoice Assistant", NotificationManager.IMPORTANCE_LOW)
+        ch.setShowBadge(false)
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(ch)
     }
 
     private fun buildNotification(text: String): Notification {

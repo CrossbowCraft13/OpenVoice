@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- <adaptive-icon> resources require a -v26-qualified folder on AGP 8.4;
+         merging them into mipmap-anydpi (as ObsoleteSdkInt suggests) breaks
+         AAPT2 resource linking even though minSdk is 26. Keep the standard
+         template layout. -->
+    <issue id="ObsoleteSdkInt">
+        <ignore path="src/main/res/mipmap-anydpi-v26" />
+    </issue>
+</lint>

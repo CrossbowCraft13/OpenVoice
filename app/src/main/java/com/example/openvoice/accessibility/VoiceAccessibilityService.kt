@@ -64,11 +64,11 @@ class VoiceAccessibilityService : AccessibilityService(), AccessibilityGateway {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        when (event.eventType) {
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
-                lastWindowChange = System.currentTimeMillis()
-                Logger.d("Window changed: ${event.packageName} / ${event.className}", "A11y")
-            }
+        // Only window changes are tracked; an if keeps lint's SwitchIntDef
+        // happy without enumerating the full AccessibilityEvent constant set.
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            lastWindowChange = System.currentTimeMillis()
+            Logger.d("Window changed: ${event.packageName} / ${event.className}", "A11y")
         }
     }
 
